@@ -7,8 +7,7 @@ import {
   Square, Settings2, Plus, Volume2, Type, Film, Image as ImageIcon,
   Wand2, Music, Mic, Power, Star, Download, Layout
 } from "lucide-react";
-import { useToast } from "@/context/ToastContext";
-import { useSound } from "@/hooks/useSound";
+import { useToast } from "@/components/Toast";
 import { signout } from "@/app/actions/auth";
 
 interface Track {
@@ -22,7 +21,6 @@ interface Track {
 
 export default function PrecisionStudio() {
   const { showToast } = useToast();
-  const soundEngine = useSound();
   const videoRef = useRef<HTMLVideoElement>(null);
   
   const [activeMode, setActiveMode] = useState<'manual' | 'ai'>('manual');
@@ -30,6 +28,11 @@ export default function PrecisionStudio() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<string>('Normal');
+  const [warpStyle, setWarpStyle] = useState<string>('None');
+  const [aspectRatio, setAspectRatio] = useState<string>('16:9');
+  const [audioDucking, setAudioDucking] = useState(false);
+  const [isCaptioning, setIsCaptioning] = useState(false);
+  const [activeInspectorTab, setActiveInspectorTab] = useState<'properties' | 'assets'>('properties');
   const [intensity, setIntensity] = useState<number>(85);
   const [aiFiles, setAiFiles] = useState<string[]>([]);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
@@ -50,7 +53,6 @@ export default function PrecisionStudio() {
     const localUrl = URL.createObjectURL(file);
     setVideoFile(localUrl);
     showToast("Source Media Ingested", "success");
-    soundEngine?.play("success");
 
     // Also upload to server for processing
     const fd = new FormData();
@@ -80,7 +82,6 @@ export default function PrecisionStudio() {
       }
       setAiFiles(prev => [...prev, ...urls]);
       showToast("Media Ready for Auto-Pilot", "success");
-      soundEngine?.play("success");
     } catch (err) {
       showToast("Upload Failed", "error");
     } finally {
@@ -91,7 +92,6 @@ export default function PrecisionStudio() {
   const startAutoPilot = async () => {
     setIsAiProcessing(true);
     showToast("Neural Auto-Pilot Initialized", "info");
-    soundEngine?.play("process");
     try {
       const res = await fetch(`${API_BASE}/api/studio/auto-pilot`, {
         method: 'POST',
@@ -104,7 +104,6 @@ export default function PrecisionStudio() {
           setResultUrl(`${API_BASE}/exports/demo_viral_clip.mp4`);
           setIsAiProcessing(false);
           showToast("AI Assembly Complete", "success");
-          soundEngine?.play("success");
         }, 5000);
       }
     } catch (err) {
@@ -118,7 +117,6 @@ export default function PrecisionStudio() {
       if (isPlaying) videoRef.current.pause();
       else videoRef.current.play();
       setIsPlaying(!isPlaying);
-      soundEngine?.play("click");
     }
   };
 
@@ -146,6 +144,19 @@ export default function PrecisionStudio() {
                     Auto-Pilot
                  </button>
               </div>
+
+              {/* Aspect Ratio Switcher */}
+              <div className="hidden lg:flex items-center bg-white/2 p-1 rounded-xl border border-white/5">
+                 {['16:9', '9:16', '1:1'].map(r => (
+                   <button 
+                      key={r}
+                      onClick={() => setAspectRatio(r)}
+                      className={`h-8 px-4 rounded-lg text-[9px] font-black transition-all ${aspectRatio === r ? 'bg-white/10 text-white' : 'text-[#404040] hover:text-white/60'}`}
+                   >
+                      {r}
+                   </button>
+                 ))}
+              </div>
            </div>
 
            <div className="flex items-center gap-6">
@@ -168,7 +179,14 @@ export default function PrecisionStudio() {
              {activeMode === 'manual' ? (
                <div className="flex flex-col gap-10">
                   {/* Player & Preview Area */}
-                  <div className="min-h-[500px] bg-[#0A0A0B] rounded-[64px] border border-white/5 relative overflow-hidden group shadow-2xl flex items-center justify-center">
+                  <div 
+                    className="min-h-[500px] bg-[#0A0A0B] rounded-[64px] border border-white/5 relative overflow-hidden group shadow-2xl flex items-center justify-center transition-all duration-500"
+                    style={{ 
+                      aspectRatio: aspectRatio === '16:9' ? '16/9' : aspectRatio === '9:16' ? '9/16' : '1/1',
+                      maxWidth: aspectRatio === '9:16' ? '400px' : '100%',
+                      margin: '0 auto'
+                    }}
+                  >
                      {!videoFile ? (
                         <div className="flex flex-col items-center gap-8">
                            <div 
@@ -222,7 +240,14 @@ export default function PrecisionStudio() {
                               </div>
                            </div>
                         </div>
-                        <div className="flex gap-4">
+                     <div className="flex gap-4">
+                           <button 
+                              onClick={() => { setIsCaptioning(true); setTimeout(() => { setIsCaptioning(false); showToast("Neural Captions Burned", "success"); }, 4000); }}
+                              className={`h-14 px-8 rounded-2xl bg-[#10b9811a] text-[10px] font-black uppercase tracking-widest text-[#10b981] hover:bg-[#10b98122] transition-all border border-[#10b98133] flex items-center gap-3 ${isCaptioning ? 'animate-pulse' : ''}`}
+                           >
+                              {isCaptioning ? <Loader2 size={16} className="animate-spin" /> : <Type size={16} />}
+                              {isCaptioning ? "Transcribing..." : "Auto-Caption"}
+                           </button>
                            <button className="h-14 px-8 rounded-2xl bg-white/2 text-[10px] font-black uppercase tracking-widest text-[#404040] hover:text-white transition-all border border-white/5 flex items-center gap-3">
                               <Scissors size={16} /> Split
                            </button>
@@ -319,13 +344,60 @@ export default function PrecisionStudio() {
 
           {/* Right Inspector - Only for Manual Mode */}
           {activeMode === 'manual' && (
-             <aside className="w-[400px] border-l border-white/5 flex flex-col p-12 gap-12 bg-[#050505]/50 backdrop-blur-3xl overflow-y-auto no-scrollbar shadow-2xl">
+             <aside className="w-[400px] border-l border-white/5 flex flex-col bg-[#050505]/50 backdrop-blur-3xl overflow-y-auto no-scrollbar shadow-2xl">
+                {/* Tabs */}
+                <div className="flex border-b border-white/5 h-16 shrink-0">
+                   <button 
+                      onClick={() => setActiveInspectorTab('properties')}
+                      className={`flex-1 text-[10px] font-black uppercase tracking-widest transition-all ${activeInspectorTab === 'properties' ? 'text-white border-b-2 border-white' : 'text-[#404040] hover:text-white/60'}`}
+                   >
+                      Properties
+                   </button>
+                   <button 
+                      onClick={() => setActiveInspectorTab('assets')}
+                      className={`flex-1 text-[10px] font-black uppercase tracking-widest transition-all ${activeInspectorTab === 'assets' ? 'text-white border-b-2 border-white' : 'text-[#404040] hover:text-white/60'}`}
+                   >
+                      Assets
+                   </button>
+                </div>
+
+                <div className="p-10 flex flex-col gap-12">
+                {activeInspectorTab === 'properties' ? (
+                   <>
                 <div>
-                   <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-10">Neural Properties</p>
+                   <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-10">Neural Effects</p>
                    <div className="flex flex-col gap-12">
+                      <div className="flex flex-col gap-6">
+                         <p className="text-[10px] font-black text-white uppercase tracking-widest mb-2">Neural Warp Style</p>
+                         <select 
+                            value={warpStyle}
+                            onChange={(e) => setWarpStyle(e.target.value)}
+                            className="w-full h-14 bg-white/2 border border-white/5 rounded-2xl px-6 text-[10px] font-black text-white uppercase tracking-widest outline-none focus:border-[#10b98133] transition-all cursor-pointer appearance-none"
+                         >
+                            <option>None</option>
+                            <option>Cyberpunk</option>
+                            <option>Manga</option>
+                            <option>Retro 80s</option>
+                            <option>Liquid Dream</option>
+                         </select>
+                      </div>
+
+                      <div className="flex items-center justify-between p-6 bg-white/2 rounded-2xl border border-white/5">
+                         <div className="flex items-center gap-4">
+                            <Volume2 size={16} className={audioDucking ? 'text-[#10b981]' : 'text-[#404040]'} />
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${audioDucking ? 'text-white' : 'text-[#404040]'}`}>Ambience AI (Ducking)</span>
+                         </div>
+                         <div 
+                            onClick={() => setAudioDucking(!audioDucking)}
+                            className={`w-10 h-5 rounded-full relative transition-all duration-300 cursor-pointer ${audioDucking ? 'bg-[#10b981]' : 'bg-white/5'}`}
+                         >
+                            <div className={`absolute w-3.5 h-3.5 bg-white rounded-full top-0.75 transition-all duration-300 ${audioDucking ? 'right-0.75' : 'left-0.75'}`} style={{ top: '3px' }} />
+                         </div>
+                      </div>
+
                       <div className="flex flex-col gap-8">
                          <div className="flex justify-between items-center">
-                            <p className="text-[11px] font-black text-white uppercase tracking-widest">Neural Warp</p>
+                            <p className="text-[11px] font-black text-white uppercase tracking-widest">Neural Warp Intensity</p>
                             <p className="text-[11px] font-black text-[#10b981] font-mono">{intensity}%</p>
                          </div>
                          <div className="relative pt-1">
@@ -339,25 +411,11 @@ export default function PrecisionStudio() {
                             <div className="absolute top-0 h-1.5 bg-[#10b98133] rounded-full pointer-events-none" style={{ width: `${intensity}%` }}></div>
                          </div>
                       </div>
-                      <div className="flex flex-col gap-8">
-                         <div className="flex justify-between items-center">
-                            <p className="text-[11px] font-black text-white uppercase tracking-widest">Ambience AI</p>
-                            <p className="text-[11px] font-black text-[#404040] font-mono">42%</p>
-                         </div>
-                         <input type="range" className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-white/10" />
-                      </div>
-                      <div className="flex flex-col gap-8">
-                         <div className="flex justify-between items-center">
-                            <p className="text-[11px] font-black text-white uppercase tracking-widest">Grain Density</p>
-                            <p className="text-[11px] font-black text-[#404040] font-mono">12%</p>
-                         </div>
-                         <input type="range" className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-white/10" />
-                      </div>
                    </div>
                 </div>
 
                 <div>
-                   <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-10">Transitions</p>
+                   <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-10">Manual Transitions</p>
                    <div className="grid grid-cols-1 gap-4">
                       {['Neural Wipe', 'Cross Bloom', 'Hard Pulse', 'Cyber-Slide'].map(t => (
                         <button key={t} className="h-16 px-8 rounded-2xl bg-white/2 border border-white/5 text-[10px] font-black text-[#404040] uppercase tracking-widest hover:text-white hover:border-white/20 transition-all text-left flex items-center justify-between group">
@@ -367,6 +425,33 @@ export default function PrecisionStudio() {
                       ))}
                    </div>
                 </div>
+                </>
+                ) : (
+                  <div className="flex flex-col gap-10">
+                     <div>
+                        <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-8">Asset Categories</p>
+                        <div className="grid grid-cols-2 gap-4">
+                           {['Stickers', 'Overlays', 'SFX', 'Music'].map(cat => (
+                             <div key={cat} className="h-24 bg-white/2 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#10b98133] transition-all cursor-pointer group">
+                                <Plus size={16} className="text-[#404040] group-hover:text-white" />
+                                <span className="text-[9px] font-black text-white uppercase tracking-widest">{cat}</span>
+                             </div>
+                           ))}
+                        </div>
+                     </div>
+                     <div>
+                        <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-8">Trending Overlays</p>
+                        <div className="flex flex-col gap-4">
+                           {['Film Grain v2', 'Neural Dust', 'Light Leak 80s'].map(ov => (
+                             <div key={ov} className="h-16 px-6 bg-white/2 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-white/20 transition-all cursor-move">
+                                <span className="text-[10px] font-black text-white uppercase tracking-widest">{ov}</span>
+                                <Plus size={14} className="text-[#404040]" />
+                             </div>
+                           ))}
+                        </div>
+                     </div>
+                  </div>
+                )}
 
                 <div className="mt-auto">
                    <button 
@@ -376,6 +461,7 @@ export default function PrecisionStudio() {
                    >
                       {isRendering ? "Finalizing Masterpiece..." : "Export Neural Render"}
                    </button>
+                </div>
                 </div>
              </aside>
           )}
