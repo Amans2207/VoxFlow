@@ -206,13 +206,13 @@ export default function PrecisionStudio() {
               <div className="flex items-center bg-white/5 p-1 rounded-2xl border border-white/5 shadow-2xl">
                  <button 
                     onClick={() => setActiveMode('manual')}
-                    className={`h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeMode === 'manual' ? 'bg-white text-black shadow-xl' : 'text-[#404040] hover:text-white'}`}
+                    className={`h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-white/10 ${activeMode === 'manual' ? 'bg-white text-[#050505] shadow-xl' : 'text-[#a1a1aa] hover:text-white'}`}
                  >
                     Manual
                  </button>
                  <button 
                     onClick={() => setActiveMode('ai')}
-                    className={`h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeMode === 'ai' ? 'bg-[#10b981] text-black shadow-xl' : 'text-[#404040] hover:text-white'}`}
+                    className={`h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-white/10 ${activeMode === 'ai' ? 'bg-[#10b981] text-[#050505] shadow-xl' : 'text-[#a1a1aa] hover:text-white'}`}
                  >
                     Auto-Pilot
                  </button>
@@ -228,9 +228,9 @@ export default function PrecisionStudio() {
 
               <button 
                 onClick={() => showToast("Social Scheduler Active. Select Date/Time.", "info")}
-                className="h-10 px-6 rounded-xl bg-[#10b981] text-black text-[9px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_#10b98166] transition-all flex items-center gap-2"
+                className="h-10 px-6 rounded-xl bg-[#10b981] text-[#050505] text-[9px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_#10b98166] hover:bg-[#10b981dd] transition-all flex items-center gap-2"
               >
-                 <Play size={14} /> Publish & Schedule
+                 <Play size={14} className="fill-[#050505]" /> Publish & Schedule
               </button>
 
               {/* Aspect Ratio Switcher */}
@@ -517,18 +517,18 @@ export default function PrecisionStudio() {
                    <div className="flex flex-col gap-6">
                       <div className="grid grid-cols-2 gap-4">
                          <div 
-                           onClick={() => showToast("Magic Eraser Initialized", "info")}
-                           className="p-6 bg-white/2 border border-white/5 rounded-2xl flex flex-col items-center gap-3 hover:border-[#a855f733] hover:shadow-[0_0_15px_#a855f722] transition-all cursor-pointer group"
+                           onClick={() => showToast("Neural calibration in progress...", "info")}
+                           className="p-6 bg-white/2 border border-white/5 rounded-2xl flex flex-col items-center gap-3 opacity-50 cursor-not-allowed group"
                          >
-                            <Wand2 size={20} className="text-[#a855f7] group-hover:scale-110 transition-transform" />
-                            <span className="text-[9px] font-black text-white uppercase tracking-widest text-center">Magic Eraser</span>
+                            <Wand2 size={20} className="text-[#a855f7]" />
+                            <span className="text-[9px] font-black text-[#a1a1aa] uppercase tracking-widest text-center">Magic Eraser</span>
                          </div>
                          <div 
-                           onClick={() => showToast("Eye Contact Calibration Active", "info")}
-                           className="p-6 bg-white/2 border border-white/5 rounded-2xl flex flex-col items-center gap-3 hover:border-[#3b82f633] hover:shadow-[0_0_15px_#3b82f622] transition-all cursor-pointer group"
+                           onClick={() => showToast("Neural calibration in progress...", "info")}
+                           className="p-6 bg-white/2 border border-white/5 rounded-2xl flex flex-col items-center gap-3 opacity-50 cursor-not-allowed group"
                          >
-                            <Monitor size={20} className="text-[#3b82f6] group-hover:scale-110 transition-transform" />
-                            <span className="text-[9px] font-black text-white uppercase tracking-widest text-center">Eye Contact</span>
+                            <Monitor size={20} className="text-[#3b82f6]" />
+                            <span className="text-[9px] font-black text-[#a1a1aa] uppercase tracking-widest text-center">Eye Contact</span>
                          </div>
                       </div>
 
