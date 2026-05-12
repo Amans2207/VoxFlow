@@ -23,6 +23,7 @@ user_voices/
 *.wav
 *.json
 !trending.json
+!.runpod/*.json
 !package.json
 !tsconfig.json
 
