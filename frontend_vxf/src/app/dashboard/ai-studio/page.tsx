@@ -17,7 +17,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:5000";
 
 const INTERNAL_VOICES = [
   { id: 'pNInz6obpg8n9Y4YvA9S', name: 'Bella (Premium)', accent: 'American' },
-  { id: 'pNInz6obpg8n9Y4YvA9S', name: 'Adam (Premium)', accent: 'American' },
+  { id: 'cgSgSjS2pM7w959mc8S4', name: 'Adam (Premium)', accent: 'American' },
   { id: 'ErXw9f1vhk9VfHBpL0tR', name: 'Antoni (Premium)', accent: 'American' },
   { id: 'v4', name: 'Aman (Creator)', accent: 'Indian' },
   { id: 'v1', name: 'Starboy (Deep)', accent: 'American' },
