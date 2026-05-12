@@ -138,7 +138,8 @@ export default function Marketplace() {
       }, 5000);
 
     } catch (err: any) {
-      showToast(err.message || "Synthesis Failed", "error");
+      console.error("[Marketplace] Synthesis Failure:", err);
+      showToast(err.message || "Synthesis Engine Crash", "error");
       setIsProcessing(false);
     }
   };

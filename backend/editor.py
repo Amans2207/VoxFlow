@@ -38,45 +38,83 @@ class VideoEditor:
         if not video_urls:
             raise ValueError("No source video URLs provided for export.")
 
-        output_path = f"exports/render_{uuid.uuid4().hex[:8]}.mp4"
+        # Ensure temp directory exists
+        temp_dir = os.path.join(os.getcwd(), "temp_synthesis")
+        os.makedirs(temp_dir, exist_ok=True)
         os.makedirs("exports", exist_ok=True)
 
+        output_path = f"exports/render_{uuid.uuid4().hex[:8]}.mp4"
         clips = []
-        temp_files = []
+        local_files = []
 
-        for url in video_urls:
-            local_path = url
-            # Handle remote URLs
-            if url.startswith("http") and not "localhost" in url and not "127.0.0.1" in url:
-                print(f"Downloading Remote Asset: {url}")
-                temp_path = f"temp_{uuid.uuid4().hex[:8]}.mp4"
-                r = requests.get(url, stream=True)
-                with open(temp_path, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=8192): f.write(chunk)
-                local_path = temp_path
-                temp_files.append(temp_path)
+        try:
+            for i, url in enumerate(video_urls):
+                local_path = url
+                # Handle remote URLs or absolute paths that need localizing
+                if url.startswith("http"):
+                    print(f"Downloading Remote Asset: {url}")
+                    local_path = os.path.join(temp_dir, f"input_{i}_{uuid.uuid4().hex[:4]}.mp4")
+                    r = requests.get(url, stream=True, timeout=30)
+                    if r.status_code == 200:
+                        with open(local_path, 'wb') as f:
+                            for chunk in r.iter_content(chunk_size=1024*1024): # 1MB chunks
+                                if chunk: f.write(chunk)
+                    else:
+                        raise Exception(f"Failed to download asset {i}: HTTP {r.status_code}")
+                
+                # Check file existence
+                if not os.path.exists(local_path):
+                     # Try to find it in the root if it's a relative path from the web
+                     root_path = local_path.lstrip('/')
+                     if os.path.exists(root_path): local_path = root_path
+                     else: raise FileNotFoundError(f"Neural Core could not find file: {local_path}")
+                
+                local_files.append(local_path)
+                print(f"Validated Asset {i}: {local_path}")
+                
+                # Load clip
+                clip = VideoFileClip(local_path)
+                clips.append(clip)
+
+            if not clips:
+                raise Exception("Neural Engine: No valid clips found in synthesis stack.")
+
+            print(f"Synthesizing {len(clips)} clips for Project {project_id}...")
             
-            if os.path.exists(local_path):
-                clips.append(VideoFileClip(local_path))
-
-        if not clips:
-            raise Exception("No valid video clips found for processing.")
-
-        # Concatenate if multiple
-        final_clip = concatenate_videoclips(clips) if len(clips) > 1 else clips[0]
-        
-        # Apply filters from template
-        filters = render_data.get('filters')
-        # ... logic for filters ...
-
-        final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac", fps=24, logger=None)
-        
-        # Cleanup
-        for f in temp_files:
-            try: os.remove(f)
-            except: pass
+            # Concatenate
+            if len(clips) > 1:
+                final_clip = concatenate_videoclips(clips, method="compose")
+            else:
+                final_clip = clips[0]
             
-        return output_path
+            # Apply Template Filters (Simplified for now)
+            filters = render_data.get('filters', '')
+            if 'saturation' in filters:
+                final_clip = final_clip.fx(vfx.colorx, 1.4)
+            
+            # Write with disk-based processing
+            final_clip.write_videofile(
+                output_path, 
+                codec="libx264", 
+                audio_codec="aac", 
+                fps=24, 
+                threads=4, 
+                logger=None,
+                preset="ultrafast" # Speed up for demo
+            )
+            
+            return output_path
+
+        except Exception as e:
+            print(f"Synthesis Engine Fatal Error: {str(e)}")
+            raise e
+        finally:
+            # Resource Management: Close all clips to free memory
+            for clip in clips:
+                try: clip.close()
+                except: pass
+            # Note: We keep temp files for now or delete them
+            # for f in local_files: ...
             clip.close()
         except Exception as e:
             print(f"Rendering Error: {e}")
