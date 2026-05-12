@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Film, Monitor, Smartphone, Square, Scissors, 
   Play, Pause, SkipBack, SkipForward, Layers, 
   Settings2, Wand2, Plus, Music, ChevronRight,
-  Type, Image as ImageIcon, Volume2, Trash2, Loader2
+  Type, Image as ImageIcon, Volume2, Trash2, Loader2,
+  Upload, CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/Toast';
 import { soundEngine } from '@/utils/SoundEngine';
+import NeuralProgressBar from "@/components/NeuralProgressBar";
 
 const BASE_URL = "http://127.0.0.1:5000";
 
@@ -29,6 +31,10 @@ export default function PrecisionStudio() {
   const [isRendering, setIsRendering] = useState(false);
   const [currentTime, setCurrentTime] = useState('00:12:45');
   const [activeLayers, setActiveLayers] = useState(['VFX_Core', 'Audio_Master']);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [tracks, setTracks] = useState<Track[]>([
     { id: 't1', name: 'Master Video', type: 'video', color: '#10b981', width: '80%', offset: '0%' },
@@ -40,6 +46,41 @@ export default function PrecisionStudio() {
     console.log(`[Precision Studio] Changing aspect ratio to: ${ratio}`);
     setAspectRatio(ratio);
     soundEngine?.play("click");
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    console.log(`[Precision Studio] Initializing Neural Ingestion: ${file.name}`);
+    setIsUploading(true);
+    setUploadProgress(10);
+    showToast("Ingesting Media Asset...", "info");
+    soundEngine?.play("process");
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${BASE_URL}/api/upload`, {
+        method: 'POST',
+        mode: 'cors',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Upload Failed");
+
+      const data = await response.json();
+      setUploadedVideoUrl(data.url);
+      setUploadProgress(100);
+      showToast("Asset Successfully Ingested", "success");
+      soundEngine?.play("success");
+    } catch (error) {
+      console.error("[Precision Studio] Upload Crash:", error);
+      showToast("Media Ingestion Failed", "error");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleTogglePlayback = () => {
@@ -170,7 +211,11 @@ export default function PrecisionStudio() {
                  maxHeight: '600px'
                }}
              >
-                <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-[2s]" />
+                {uploadedVideoUrl ? (
+                   <video src={uploadedVideoUrl} className="w-full h-full object-cover" />
+                ) : (
+                   <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-[2s]" />
+                )}
                 
                 {/* Transport Controls */}
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 p-4 lg:p-5 bg-black/60 backdrop-blur-2xl rounded-3xl border border-white/10 flex items-center gap-6 lg:gap-10 shadow-2xl">
@@ -233,6 +278,28 @@ export default function PrecisionStudio() {
                 </h3>
                 
                 <div className="flex flex-col gap-10">
+                   {/* Media Assets Ingestion */}
+                   <div className="flex flex-col gap-4">
+                      <p className="text-[10px] font-black text-[#404040] uppercase tracking-widest pl-2">Media Assets</p>
+                      <div 
+                        className="p-8 bg-white/2 border-2 border-dashed border-white/5 rounded-[32px] flex flex-col items-center gap-4 cursor-pointer hover:border-[#10b98133] transition-all"
+                        onClick={() => !isUploading && fileInputRef.current?.click()}
+                      >
+                         {isUploading ? (
+                            <Loader2 size={24} className="text-[#10b981] animate-spin" />
+                         ) : uploadedVideoUrl ? (
+                            <CheckCircle2 size={24} className="text-[#10b981]" />
+                         ) : (
+                            <Upload size={24} className="text-[#404040]" />
+                         )}
+                         <span className="text-[10px] font-black text-white uppercase tracking-widest">
+                            {isUploading ? "Uploading..." : uploadedVideoUrl ? "Media Loaded" : "Import Video"}
+                         </span>
+                         <input type="file" ref={fileInputRef} className="hidden" accept="video/*" onChange={handleVideoUpload} />
+                      </div>
+                      {isUploading && <NeuralProgressBar progress={uploadProgress} label="Ingesting..." color="#10b981" />}
+                   </div>
+
                    {/* Layer Management */}
                    <div className="flex flex-col gap-4">
                       <p className="text-[10px] font-black text-[#404040] uppercase tracking-widest pl-2">Track Types</p>
