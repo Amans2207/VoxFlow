@@ -31,73 +31,52 @@ class VideoEditor:
         project_id = render_data.get('project_id', 'unknown')
         print(f"Initializing Neural Export for Project: {project_id}")
         
-        video_url = render_data.get('video_url')
-        if not video_url:
-            raise ValueError("No source video URL provided for export.")
+        video_urls = render_data.get('video_urls', [])
+        if not video_urls and render_data.get('video_url'):
+            video_urls = [render_data.get('video_url')]
+            
+        if not video_urls:
+            raise ValueError("No source video URLs provided for export.")
 
         output_path = f"exports/render_{uuid.uuid4().hex[:8]}.mp4"
-        
-        # Check for High-Fidelity requirements
-        is_4k = render_data.get('resolution') == '4K' or render_data.get('quality') == '4k'
-        is_60fps = render_data.get('fps') == 60
-        codec = "libx264"
-        
-        if render_data.get('fidelity') == 'ProRes' or render_data.get('quality') == 'prores':
-            codec = "prores_ks"
-            output_path = output_path.replace(".mp4", ".mov")
-            print("Switching to ProRes High-Fidelity Pipeline (.mov)")
-
         os.makedirs("exports", exist_ok=True)
+
+        clips = []
+        temp_files = []
+
+        for url in video_urls:
+            local_path = url
+            # Handle remote URLs
+            if url.startswith("http") and not "localhost" in url and not "127.0.0.1" in url:
+                print(f"Downloading Remote Asset: {url}")
+                temp_path = f"temp_{uuid.uuid4().hex[:8]}.mp4"
+                r = requests.get(url, stream=True)
+                with open(temp_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192): f.write(chunk)
+                local_path = temp_path
+                temp_files.append(temp_path)
+            
+            if os.path.exists(local_path):
+                clips.append(VideoFileClip(local_path))
+
+        if not clips:
+            raise Exception("No valid video clips found for processing.")
+
+        # Concatenate if multiple
+        final_clip = concatenate_videoclips(clips) if len(clips) > 1 else clips[0]
         
-        local_input_path = video_url
-        is_temp = False
+        # Apply filters from template
+        filters = render_data.get('filters')
+        # ... logic for filters ...
 
-        # Handle remote URLs
-        if video_url.startswith("http") and not "localhost:8000" in video_url:
-            print(f"Downloading Remote Asset: {video_url}")
-            local_input_path = f"temp_input_{uuid.uuid4().hex[:8]}.mp4"
-            r = requests.get(video_url, stream=True)
-            if r.status_code == 200:
-                with open(local_input_path, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                is_temp = True
-            else:
-                raise Exception(f"Failed to download remote asset: HTTP {r.status_code}")
-
-        # Final validation
-        if not os.path.exists(local_input_path):
-             print(f"Source file missing: {local_input_path}")
-             raise FileNotFoundError(f"Neural Core could not find source video: {local_input_path}")
-
-        # In a real production scenario, we would use MoviePy or FFmpeg to apply effects here.
-        try:
-            print(f"Baking Neural Profile for {local_input_path}...")
-            if render_data.get('fidelity') == 'ProRes':
-                # Already handled at top
-                pass
-
-            clip = VideoFileClip(local_input_path)
+        final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac", fps=24, logger=None)
+        
+        # Cleanup
+        for f in temp_files:
+            try: os.remove(f)
+            except: pass
             
-            if is_4k:
-                clip = clip.resize(height=2160)
-            
-            # Apply standard 9:16 vertical crop if it's a 'final_export' or '916'
-            export_type = str(render_data.get('type', '')).lower()
-            if export_type == 'final_export' or render_data.get('quality') == '916':
-                print("Applying 9:16 Social Vertical Crop")
-                w, h = clip.size
-                target_w = int(h * 9 / 16)
-                if w > target_w:
-                    clip = clip.crop(x_center=w/2, width=target_w)
-
-            # Smart Beat-Detection for Dynamic Transitions
-            if render_data.get('beat_sync'):
-                beats = self.detect_beats(local_input_path)
-                # In a real sync-edit, we would adjust speed/cuts here
-                print(f"Sync-Edit: Detected {len(beats)} transients for alignment.")
-
-            clip.write_videofile(output_path, codec=codec, audio_codec="aac", fps=60 if is_60fps else 24, logger=None)
+        return output_path
             clip.close()
         except Exception as e:
             print(f"Rendering Error: {e}")

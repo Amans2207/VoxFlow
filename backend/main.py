@@ -347,17 +347,20 @@ async def process_marketplace_item(request: Request, background_tasks: Backgroun
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-async def run_marketplace_pipeline(template, video_url, user_id):
+async def run_marketplace_pipeline(template, video_urls, user_id):
     try:
-        # 1. Deduct Credits via Supabase (if configured)
-        if supabase:
-            print(f"Deducting {template['credits_cost']} credits for user {user_id}")
-            # Logic here...
+        # Handle both single string and list
+        if isinstance(video_urls, str):
+            video_urls = [video_urls]
+            
+        # 1. Deduct Credits
+        print(f"Deducting {template['credits_cost']} credits for user {user_id}")
         
-        # 2. Process with VideoEditor
+        # 2. Process with VideoEditor (Concatenate if multiple)
         render_data = {
             "project_id": f"mkplace_{uuid.uuid4().hex[:6]}",
-            "video_url": video_url,
+            "video_urls": video_urls, # NEW: support for multiple
+            "video_url": video_urls[0], # Fallback for old logic
             "quality": "final_export",
             "filters": template['ffmpeg_filters']
         }
@@ -374,6 +377,12 @@ async def run_marketplace_pipeline(template, video_url, user_id):
         })
     except Exception as e:
         print(f"Marketplace Error: {e}")
+        await manager.broadcast({
+            "type": "render_status", 
+            "status": "Failed", 
+            "error": str(e),
+            "message": "Synthesis Engine Crash"
+        })
 
 @app.get("/editor/trending")
 async def get_trending_music():

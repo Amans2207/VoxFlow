@@ -16,7 +16,7 @@ export default function Marketplace() {
   const [deployingId, setDeployingId] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -66,23 +66,27 @@ export default function Marketplace() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
     setIsUploading(true);
-    showToast("Ingesting Primary Asset...", "info");
+    showToast(`Ingesting ${files.length} Assets...`, "info");
     soundEngine?.play("process");
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch(`${API_BASE}/api/upload`, {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      setUploadedUrl(data.url);
-      showToast("Asset Ready for Injection", "success");
+      const urls: string[] = [];
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch(`${API_BASE}/api/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        urls.push(data.url);
+      }
+      setUploadedUrls(prev => [...prev, ...urls]);
+      showToast(`${files.length} Assets Ready`, "success");
       soundEngine?.play("success");
     } catch (err) {
       showToast("Upload Failed", "error");
@@ -92,7 +96,7 @@ export default function Marketplace() {
   };
 
   const startSynthesis = async () => {
-    if (!uploadedUrl || !selectedTemplate) return;
+    if (uploadedUrls.length === 0 || !selectedTemplate) return;
 
     setIsProcessing(true);
     setProgress(20);
@@ -105,7 +109,7 @@ export default function Marketplace() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           template_id: selectedTemplate.id,
-          video_url: uploadedUrl,
+          video_urls: uploadedUrls,
           user_id: 'temp_user'
         })
       });
@@ -245,23 +249,26 @@ export default function Marketplace() {
                        >
                           {isUploading ? (
                              <Loader2 size={32} className="text-[#10b981] animate-spin" />
-                          ) : uploadedUrl ? (
-                             <CheckCircle2 size={32} className="text-[#10b981]" />
+                          ) : uploadedUrls.length > 0 ? (
+                             <div className="flex flex-col items-center gap-2">
+                                <CheckCircle2 size={32} className="text-[#10b981]" />
+                                <span className="text-[14px] font-black text-white">{uploadedUrls.length} Files</span>
+                             </div>
                           ) : (
                              <Upload size={32} className="text-[#404040] group-hover:text-white transition-colors" />
                           )}
                           <p className="text-[10px] font-black text-white uppercase tracking-widest">
-                             {isUploading ? "Ingesting..." : uploadedUrl ? "Media Ready" : "Upload Primary Video"}
+                             {isUploading ? "Ingesting..." : uploadedUrls.length > 0 ? "Add More Media" : "Upload Video Clips"}
                           </p>
-                          <input id="market-upload" type="file" className="hidden" accept="video/*" onChange={handleFileUpload} />
+                          <input id="market-upload" type="file" className="hidden" accept="video/*" multiple onChange={handleFileUpload} />
                        </div>
 
                        {isProcessing && <NeuralProgressBar progress={progress} label="Applying Neural Styles..." color="#10b981" />}
 
                        <button 
-                         disabled={!uploadedUrl || isProcessing}
+                         disabled={uploadedUrls.length === 0 || isProcessing}
                          onClick={startSynthesis}
-                         className={`h-20 w-full rounded-3xl font-black text-[12px] uppercase tracking-[6px] transition-all border-none shadow-2xl ${!uploadedUrl || isProcessing ? 'bg-white/5 text-[#404040] cursor-not-allowed' : 'bg-[#10b981] text-black cursor-pointer hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]'}`}
+                         className={`h-20 w-full rounded-3xl font-black text-[12px] uppercase tracking-[6px] transition-all border-none shadow-2xl ${uploadedUrls.length === 0 || isProcessing ? 'bg-white/5 text-[#404040] cursor-not-allowed' : 'bg-[#10b981] text-black cursor-pointer hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]'}`}
                        >
                           {isProcessing ? "Synthesizing..." : "Inject Assets"}
                        </button>
