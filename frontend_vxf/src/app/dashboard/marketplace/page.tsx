@@ -114,24 +114,31 @@ export default function Marketplace() {
         })
       });
       
-      if (!res.ok) throw new Error("Synthesis failed");
+      const data = await res.json();
+      if (data.status === 'error') throw new Error(data.message);
 
-      // Mock polling for demo, in real it should use WebSocket
+      showToast("Synthesis Orchestrated", "success");
+      
+      // Listen for WebSocket or simulate for demo
       let p = 20;
       const interval = setInterval(() => {
-        p += 5;
+        p += 10;
+        if (p > 95) p = 98; // Stay at 98 until done
         setProgress(p);
-        if (p >= 100) {
-          clearInterval(interval);
-          setResultUrl(`${API_BASE}/exports/render_sample.mp4`); // Example
-          setIsProcessing(false);
-          showToast("Viral Synthesis Complete!", "success");
-          soundEngine?.play("success");
-        }
-      }, 300);
+      }, 500);
 
-    } catch (err) {
-      showToast("Synthesis Failed", "error");
+      // In real scenario, WebSocket broadcasts 'Completed'
+      setTimeout(() => {
+        clearInterval(interval);
+        setProgress(100);
+        setResultUrl(`${API_BASE}/exports/demo_viral_clip.mp4`); 
+        setIsProcessing(false);
+        showToast("Viral Synthesis Complete!", "success");
+        soundEngine?.play("success");
+      }, 5000);
+
+    } catch (err: any) {
+      showToast(err.message || "Synthesis Failed", "error");
       setIsProcessing(false);
     }
   };

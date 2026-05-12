@@ -325,26 +325,35 @@ async def process_marketplace_item(request: Request, background_tasks: Backgroun
     try:
         data = await request.json()
         template_id = data.get('template_id')
-        video_url = data.get('video_url')
-        user_id = data.get('user_id')
+        video_urls = data.get('video_urls', [])
+        user_id = data.get('user_id', 'anonymous')
         
+        # Validation
+        if not video_urls:
+            return {"status": "error", "message": "No media selected for injection"}
+
         # Load templates
-        with open("templates.json", "r") as f:
+        templates_path = "templates.json"
+        if not os.path.exists(templates_path):
+             return {"status": "error", "message": "Templates registry missing on server"}
+
+        with open(templates_path, "r") as f:
             templates = json.load(f)
         
-        template = templates.get(template_id)
+        template = templates.get(str(template_id)) # Ensure string key
         if not template:
-            return {"status": "error", "message": "Invalid Template ID"}
+            return {"status": "error", "message": f"Template ID {template_id} not found in registry"}
 
-        # Background task for rendering and credit deduction
-        background_tasks.add_task(run_marketplace_pipeline, template, video_url, user_id)
+        # Background task
+        background_tasks.add_task(run_marketplace_pipeline, template, video_urls, user_id)
         
         return {
             "status": "success", 
             "message": "Marketplace Synthesis Initialized",
-            "credits_deducted": template['credits_cost']
+            "credits_deducted": template.get('credits_cost', 0)
         }
     except Exception as e:
+        print(f"Marketplace Route Error: {e}")
         return {"status": "error", "message": str(e)}
 
 async def run_marketplace_pipeline(template, video_urls, user_id):
