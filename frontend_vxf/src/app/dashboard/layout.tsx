@@ -45,10 +45,10 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen w-full bg-[#050505] text-white overflow-hidden font-sans">
+    <div className="flex min-h-screen w-full bg-[#050505] text-white font-sans overflow-visible">
       
-      {/* Sidebar - Explicitly Visible on Large Screens */}
-      <aside className="hidden lg:flex flex-col w-[280px] bg-[#050505] border-r border-white/5 shrink-0 z-50">
+      {/* Sidebar - Sticky and Fixed Height */}
+      <aside className="hidden lg:flex flex-col w-[280px] bg-[#050505] border-r border-white/5 shrink-0 z-50 sticky top-0 h-screen">
         <div className="p-8 pb-12">
            <Link href="/dashboard" className="flex items-center gap-4 no-underline text-white group">
               <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 shadow-[0_0_20px_rgba(16,185,129,0.2)] group-hover:bg-white/10 transition-all">
@@ -90,10 +90,10 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#050505] relative overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 bg-[#050505] relative overflow-visible">
         
-        {/* Header */}
-        <header className="h-20 shrink-0 flex items-center justify-between px-6 lg:px-10 border-b border-white/5 bg-[#050505]/95 backdrop-blur-3xl z-40">
+        {/* Header - Sticky */}
+        <header className="h-20 shrink-0 flex items-center justify-between px-6 lg:px-10 border-b border-white/5 bg-[#050505]/95 backdrop-blur-3xl z-40 sticky top-0">
            <div className="flex lg:hidden items-center gap-3">
               <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center border border-white/10">
                  <Zap size={20} className="text-[#10b981]" />
@@ -108,8 +108,8 @@ export default function DashboardLayout({
            </div>
         </header>
 
-        {/* Content Section */}
-        <main className="flex-1 overflow-y-auto no-scrollbar scroll-smooth p-6 lg:p-10">
+        {/* Content Section - No Inner Scroll */}
+        <main className="flex-1 p-6 lg:p-10">
            <div className="max-w-[1400px] mx-auto w-full">
               <UploadProvider>
                  {children}

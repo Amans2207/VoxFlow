@@ -188,7 +188,7 @@ export default function PrecisionStudio() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#050505] text-white overflow-hidden font-sans">
+    <div className="flex min-h-screen w-full bg-[#050505] text-white font-sans overflow-visible">
       {!isSystemOnline && (
         <div className="fixed top-0 left-0 w-full h-12 bg-red-600/20 backdrop-blur-3xl border-b border-red-600/30 z-[9999] flex items-center justify-center gap-4">
            <div className="w-2 h-2 rounded-full bg-red-500 animate-ping"></div>
@@ -282,7 +282,7 @@ export default function PrecisionStudio() {
 
         <div className="flex-1 flex overflow-hidden">
           {/* Main Editing Area */}
-          <div className="flex-1 flex flex-col p-8 lg:p-12 overflow-y-auto no-scrollbar scroll-smooth">
+          <div className="flex-1 flex flex-col p-8 lg:p-12 overflow-visible no-scrollbar scroll-smooth">
              {activeMode === 'manual' ? (
                <div className="flex flex-col gap-10">
                   {/* Player & Preview Area */}
@@ -461,7 +461,7 @@ export default function PrecisionStudio() {
 
           {/* Right Inspector */}
           {activeMode === 'manual' && (
-             <aside className="w-[400px] border-l border-white/5 flex flex-col bg-[#050505]/50 backdrop-blur-3xl overflow-y-auto no-scrollbar shadow-2xl">
+             <aside className="w-[400px] border-l border-white/5 flex flex-col bg-[#050505]/50 backdrop-blur-3xl overflow-visible no-scrollbar shadow-2xl">
                 {/* Tabs */}
                 <div className="flex border-b border-white/5 h-16 shrink-0 overflow-x-auto no-scrollbar">
                    {[
