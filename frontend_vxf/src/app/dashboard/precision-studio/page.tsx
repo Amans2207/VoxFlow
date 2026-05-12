@@ -36,16 +36,6 @@ export default function PrecisionStudio() {
   const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.play().catch(e => console.error("Playback failed:", e));
-      } else {
-        videoRef.current.pause();
-      }
-    }
-  }, [isPlaying]);
   
   const [tracks, setTracks] = useState<Track[]>([
     { id: 't1', name: 'Master Video', type: 'video', color: '#10b981', width: '80%', offset: '0%' },
@@ -95,7 +85,10 @@ export default function PrecisionStudio() {
   };
 
   const handleTogglePlayback = () => {
-    console.log(`[Precision Studio] Playback ${!isPlaying ? 'Started' : 'Paused'}`);
+    if (videoRef.current) {
+      if (isPlaying) videoRef.current.pause();
+      else videoRef.current.play();
+    }
     setIsPlaying(!isPlaying);
     soundEngine?.play("click");
   };
@@ -119,13 +112,11 @@ export default function PrecisionStudio() {
         },
         body: JSON.stringify({
           project_id: `studio_${Date.now()}`,
-          user_id: "demo_user",
-          tracks: {}, // Explicitly pass empty dict if none
+          video_url: uploadedVideoUrl,
           config: {
             aspect_ratio: aspectRatio,
             layers: activeLayers,
-            tracks: tracks,
-            video_url: uploadedVideoUrl
+            tracks: tracks
           }
         }),
       });
@@ -158,14 +149,43 @@ export default function PrecisionStudio() {
   };
 
   const handleTrim = () => {
-    console.log("[Precision Studio] Triggering Trim Logic at current playhead");
-    showToast("Segment Trimmed", "info");
-    soundEngine?.play("click");
+    console.log("[Precision Studio] Triggering Trim Logic");
+    if (tracks.length > 0) {
+      setTracks(prev => prev.map((t, i) => i === 0 ? { ...t, width: '40%' } : t));
+      showToast("Segment Trimmed", "info");
+      soundEngine?.play("click");
+    }
   };
 
   const handleSplit = () => {
-    console.log("[Precision Studio] Triggering Split Logic at current playhead");
-    showToast("Track Split Successfully", "info");
+    console.log("[Precision Studio] Triggering Split Logic");
+    if (tracks.length > 0) {
+      const newTrack: Track = { 
+        id: `t${tracks.length + 1}`, 
+        name: 'Split Track', 
+        type: 'video', 
+        color: '#f59e0b', 
+        width: '30%', 
+        offset: '50%' 
+      };
+      setTracks([...tracks, newTrack]);
+      showToast("Track Split Successfully", "info");
+      soundEngine?.play("click");
+    }
+  };
+
+  const handleAddTrack = (type: 'video' | 'audio' | 'overlay') => {
+    const id = `t${tracks.length + 1}`;
+    const newTrack: Track = {
+      id,
+      name: `New ${type}`,
+      type,
+      color: type === 'video' ? '#10b981' : type === 'audio' ? '#3b82f6' : '#a855f7',
+      width: '50%',
+      offset: '0%'
+    };
+    setTracks([...tracks, newTrack]);
+    showToast(`${type} track added`, "success");
     soundEngine?.play("click");
   };
 
@@ -226,13 +246,7 @@ export default function PrecisionStudio() {
                }}
              >
                 {uploadedVideoUrl ? (
-                   <video 
-                    ref={videoRef}
-                    src={uploadedVideoUrl} 
-                    className="w-full h-full object-cover" 
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                   />
+                   <video ref={videoRef} src={uploadedVideoUrl} className="w-full h-full object-cover" />
                 ) : (
                    <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-[2s]" />
                 )}
@@ -330,8 +344,12 @@ export default function PrecisionStudio() {
                            { id: 'text', name: 'Captions', icon: <Type size={16} /> },
                            { id: 'asset', name: 'Asset', icon: <ImageIcon size={16} /> }
                          ].map(type => (
-                           <div key={type.id} className="p-4 bg-white/2 border border-white/5 rounded-2xl flex flex-col items-center gap-2 hover:border-white/10 transition-all cursor-pointer">
-                              <div className="text-[#404040]">{type.icon}</div>
+                           <div 
+                             key={type.id} 
+                             onClick={() => handleAddTrack(type.id === 'text' ? 'overlay' : type.id as any)}
+                             className="p-4 bg-white/2 border border-white/5 rounded-2xl flex flex-col items-center gap-2 hover:border-white/10 transition-all cursor-pointer active:scale-95"
+                           >
+                              <div className="text-[#404040] group-hover:text-white">{type.icon}</div>
                               <span className="text-[9px] font-black text-white uppercase tracking-widest">{type.name}</span>
                            </div>
                          ))}
