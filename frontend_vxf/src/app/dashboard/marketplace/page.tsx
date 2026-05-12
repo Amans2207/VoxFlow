@@ -21,6 +21,8 @@ export default function Marketplace() {
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
 
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:5000";
+
   useEffect(() => {
     const fetchTemplates = async () => {
       const supabase = createClient();
@@ -30,7 +32,16 @@ export default function Marketplace() {
         setTemplates([
           { id: '1', title: 'Viral Hormozi Pack', creator: 'Aman Pro', price: 100, sales: 1240, rating: 4.9, preview: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80' },
           { id: '2', title: 'Cyber-Rush Node', creator: 'NeuralFX', price: 50, sales: 850, rating: 4.8, preview: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80' },
-          { id: '3', title: 'Executive Gold LUTs', creator: 'StudioFlux', price: 150, sales: 430, rating: 5.0, preview: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80' }
+          { id: '3', title: 'Executive Gold LUTs', creator: 'StudioFlux', price: 150, sales: 430, rating: 5.0, preview: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80' },
+          { id: '4', title: 'MrBeast Dynamics', creator: 'BeastMode', price: 200, sales: 2100, rating: 4.9, preview: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?auto=format&fit=crop&q=80' },
+          { id: '5', title: 'Iman Gadzhi Aesthetic', creator: 'GadzhiFlow', price: 120, sales: 980, rating: 4.7, preview: 'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&q=80' },
+          { id: '6', title: 'Ali Abdaal Clarity', creator: 'DeepStudy', price: 80, sales: 1540, rating: 4.8, preview: 'https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?auto=format&fit=crop&q=80' },
+          { id: '7', title: 'Logan Paul Energy', creator: 'ViralX', price: 250, sales: 3200, rating: 4.6, preview: 'https://images.unsplash.com/photo-1533107862482-0e6974b06ec4?auto=format&fit=crop&q=80' },
+          { id: '8', title: 'Vaynerchuk Raw', creator: 'DailyVee', price: 90, sales: 1100, rating: 4.9, preview: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&q=80' },
+          { id: '9', title: 'Tate War Room', creator: 'TopG', price: 500, sales: 500, rating: 4.5, preview: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&q=80' },
+          { id: '10', title: 'Lex Fridman Deep', creator: 'NeuralMind', price: 110, sales: 860, rating: 5.0, preview: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80' },
+          { id: '11', title: 'Beast Philanthropy', creator: 'CharityAI', price: 0, sales: 5400, rating: 4.9, preview: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80' },
+          { id: '12', title: 'MKBHD Tech Glow', creator: 'Studio7', price: 180, sales: 1200, rating: 5.0, preview: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&q=80' }
         ]);
       }
     };
@@ -65,7 +76,7 @@ export default function Marketplace() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch('http://127.0.0.1:5000/api/upload', {
+      const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
         body: formData
       });
@@ -89,7 +100,7 @@ export default function Marketplace() {
     soundEngine?.play("process");
 
     try {
-      const res = await fetch('http://127.0.0.1:5000/api/marketplace/process', {
+      const res = await fetch(`${API_BASE}/api/marketplace/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -108,7 +119,7 @@ export default function Marketplace() {
         setProgress(p);
         if (p >= 100) {
           clearInterval(interval);
-          setResultUrl(`http://127.0.0.1:5000/exports/render_sample.mp4`); // Example
+          setResultUrl(`${API_BASE}/exports/render_sample.mp4`); // Example
           setIsProcessing(false);
           showToast("Viral Synthesis Complete!", "success");
           soundEngine?.play("success");
@@ -186,16 +197,10 @@ export default function Marketplace() {
                         <p className="text-sm font-black text-[#404040]">{t.sales.toLocaleString()} UNITS</p>
                      </div>
                      <button 
-                        disabled={deployingId === t.id}
                         onClick={() => handleInjectAsset(t.id, t.title)}
-                        className={`h-14 lg:h-16 px-8 lg:px-10 font-black rounded-2xl text-[10px] uppercase tracking-widest cursor-pointer shadow-2xl active:scale-95 transition-all border-none ${deployingId === t.id ? 'bg-white/5 text-[#404040] cursor-not-allowed' : 'bg-white text-black'}`}
+                        className="h-14 lg:h-16 px-8 lg:px-10 font-black rounded-2xl text-[10px] uppercase tracking-widest cursor-pointer shadow-2xl active:scale-95 transition-all border-none bg-white text-black hover:bg-[#10b981] hover:text-white"
                      >
-                        {deployingId === t.id ? (
-                            <div className="flex items-center gap-2">
-                                <Loader2 size={14} className="animate-spin" />
-                                INJECTING
-                            </div>
-                        ) : "Inject Asset"}
+                        Inject Asset
                      </button>
                   </div>
                </div>
