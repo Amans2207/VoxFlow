@@ -146,10 +146,21 @@ def start_trend_worker():
 async def startup_event():
     start_trend_worker()
 
-# Supabase Initialization
-supabase_url = os.environ.get("SUPABASE_URL")
-supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
-supabase = create_client(supabase_url, supabase_key) if supabase_url and supabase_key else None
+# Indian Language Voice Registry (LPU Optimized)
+INDIAN_VOICES = {
+    "hi-IN": {"male": "hi_male_star", "female": "hi_female_star"},
+    "mr-IN": {"male": "mr_male_star", "female": "mr_female_star"},
+    "ta-IN": {"male": "ta_male_star", "female": "ta_female_star"},
+    "te-IN": {"male": "te_male_star", "female": "te_female_star"},
+    "bn-IN": {"male": "bn_male_star", "female": "bn_female_star"},
+    "gu-IN": {"male": "gu_male_star", "female": "gu_female_star"},
+    "kn-IN": {"male": "kn_male_star", "female": "kn_female_star"},
+    "ml-IN": {"male": "ml_male_star", "female": "ml_female_star"},
+    "pa-IN": {"male": "pa_male_star", "female": "pa_female_star"},
+    "as-IN": {"male": "as_male_star", "female": "as_female_star"},
+    "or-IN": {"male": "or_male_star", "female": "or_female_star"},
+    "ur-IN": {"male": "ur_male_star", "female": "ur_female_star"},
+}
 
 class DubRequest(BaseModel):
     video_url: str

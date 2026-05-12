@@ -25,18 +25,21 @@ const INTERNAL_VOICES = [
 ];
 
 const INTERNAL_LANGUAGES = [
-  { code: 'hi', name: 'Hindi (India)' },
-  { code: 'es', name: 'Spanish (Global)' },
-  { code: 'fr', name: 'French (Europe)' },
-  { code: 'de', name: 'German (DACH)' },
-  { code: 'ja', name: 'Japanese (Asia)' },
-  { code: 'zh', name: 'Mandarin (China)' },
-  { code: 'ko', name: 'Korean (South Korea)' },
-  { code: 'it', name: 'Italian (Italy)' },
-  { code: 'pt', name: 'Portuguese (Brazil)' },
-  { code: 'ar', name: 'Arabic (Middle East)' },
-  { code: 'ru', name: 'Russian (Russia)' },
-  { code: 'tr', name: 'Turkish (Turkey)' }
+  { code: 'hi-IN', name: 'Hindi (हिंदी)', flag: '🇮🇳' },
+  { code: 'mr-IN', name: 'Marathi (मराठी)', flag: '🇮🇳' },
+  { code: 'ta-IN', name: 'Tamil (தமிழ்)', flag: '🇮🇳' },
+  { code: 'te-IN', name: 'Telugu (తెలుగు)', flag: '🇮🇳' },
+  { code: 'bn-IN', name: 'Bengali (বাংলা)', flag: '🇮🇳' },
+  { code: 'gu-IN', name: 'Gujarati (ગુજરાતી)', flag: '🇮🇳' },
+  { code: 'kn-IN', name: 'Kannada (ಕನ್ನಡ)', flag: '🇮🇳' },
+  { code: 'ml-IN', name: 'Malayalam (മലയാളം)', flag: '🇮🇳' },
+  { code: 'pa-IN', name: 'Punjabi (ਪੰਜਾਬੀ)', flag: '🇮🇳' },
+  { code: 'as-IN', name: 'Assamese (অসমীয়া)', flag: '🇮🇳' },
+  { code: 'or-IN', name: 'Odia (ଓଡ଼ିଆ)', flag: '🇮🇳' },
+  { code: 'ur-IN', name: 'Urdu (اردو)', flag: '🇮🇳' },
+  { code: 'en-US', name: 'English (US)', flag: '🇺🇸' },
+  { code: 'es-ES', name: 'Spanish (ES)', flag: '🇪🇸' },
+  { code: 'ja-JP', name: 'Japanese (JP)', flag: '🇯🇵' }
 ];
 
 

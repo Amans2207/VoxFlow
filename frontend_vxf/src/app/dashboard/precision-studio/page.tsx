@@ -37,7 +37,22 @@ export default function PrecisionStudio() {
   const [aiFiles, setAiFiles] = useState<string[]>([]);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
-  
+  const [targetLang, setTargetLang] = useState("hi-IN");
+
+  const INDIAN_LANGUAGES = [
+    { code: 'hi-IN', name: 'Hindi (हिंदी)', flag: '🇮🇳' },
+    { code: 'mr-IN', name: 'Marathi (मराठी)', flag: '🇮🇳' },
+    { code: 'ta-IN', name: 'Tamil (தமிழ்)', flag: '🇮🇳' },
+    { code: 'te-IN', name: 'Telugu (తెలుగు)', flag: '🇮🇳' },
+    { code: 'bn-IN', name: 'Bengali (বাংলা)', flag: '🇮🇳' },
+    { code: 'gu-IN', name: 'Gujarati (ગુજરાતી)', flag: '🇮🇳' },
+    { code: 'kn-IN', name: 'Kannada (ಕನ್ನಡ)', flag: '🇮🇳' },
+    { code: 'ml-IN', name: 'Malayalam (മലയാളം)', flag: '🇮🇳' },
+    { code: 'pa-IN', name: 'Punjabi (ਪੰਜਾਬੀ)', flag: '🇮🇳' },
+    { code: 'ur-IN', name: 'Urdu (اردو)', flag: '🇮🇳' },
+    { code: 'en-US', name: 'English (US)', flag: '🇺🇸' }
+  ];
+
   const [tracks, setTracks] = useState<Track[]>([
     { id: 't1', name: 'Primary Video', type: 'video', color: '#10b981', width: '80%', offset: '0%' },
     { id: 't2', name: 'Background Audio', type: 'audio', color: '#3b82f6', width: '100%', offset: '0%' },
