@@ -116,9 +116,29 @@ app.add_middleware(
     expose_headers=["Content-Disposition"], # Needed for file downloads
 )
 
+class GoogleAuthRequest(BaseModel):
+    email: str
+    name: str = ""
+    image: str = ""
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok"}
+
+@app.post("/api/auth/google")
+async def google_auth(request: GoogleAuthRequest):
+    print(f"[Auth] Google Sign-In: {request.email}")
+    # Mock DB Logic: Check if user exists, if not create and add 10 credits
+    # In production, this would use the Supabase client
+    return {
+        "status": "success",
+        "user": {
+            "email": request.email,
+            "name": request.name,
+            "credits": 10, # Welcome Gift
+            "is_new": True
+        }
+    }
 
 # Route Separation
 from routes.autopilot_routes import autopilot_bp

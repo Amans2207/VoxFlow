@@ -13,18 +13,46 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:5000";
 
 export default function VoiceLab() {
   const { showToast } = useToast();
+  const [isSystemOnline, setIsSystemOnline] = useState(true);
   const [isNeuralizing, setIsNeuralizing] = useState(false);
   const [voiceProfiles, setVoiceProfiles] = useState([
     { id: 'p1', name: 'Original Twin', type: 'Zero-Shot', accuracy: '98.4%', created: '2 days ago' }
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+
+  // Global API Wrapper with Retry Mechanism
+  const safeFetch = async (url: string, options: RequestInit = {}, retries = 2): Promise<any> => {
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+      return await response.json();
+    } catch (err) {
+      if (retries > 0) {
+        console.warn(`Fetch failed, retrying... (${retries} left)`);
+        await new Promise(r => setTimeout(r, 1000));
+        return safeFetch(url, options, retries - 1);
+      }
+      throw err;
+    }
+  };
+
+  React.useEffect(() => {
+    const checkConnectivity = async () => {
+      try {
+        const data = await safeFetch(`${API_BASE}/api/health`, {}, 1);
+        setIsSystemOnline(data.status === 'ok');
+      } catch {
+        setIsSystemOnline(false);
+      }
+    };
+    checkConnectivity();
+  }, [API_BASE]);
+
   const handleVoiceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    
-    console.log(`[Voice Lab] Initializing Neural Voice Capture: ${file.name}`);
-    console.log(`[Voice Lab] Target Service: ${BASE_URL}/api/clone`);
+    if (!file || !isSystemOnline) return;
     
     setIsNeuralizing(true);
     showToast("Initializing Neural Capture...", "info");
@@ -33,24 +61,12 @@ export default function VoiceLab() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('user_id', 'demo_user'); // Hardcoded for demo, usually from Auth
+      formData.append('user_id', 'demo_user');
 
-      const url = `${BASE_URL}/api/clone`;
-      console.log('Bhai, request ja rahi hai to:', url);
-      console.log('Sending request to Backend...');
-      const response = await fetch(url, {
+      const data = await safeFetch(`${API_BASE}/api/clone`, {
         method: 'POST',
-        mode: 'cors',
         body: formData,
       });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message || "Voice Neuralization Failure");
-      }
-
-      const data = await response.json();
-      console.log("[Voice Lab] Voice Neuralized Successfully:", data);
 
       setVoiceProfiles(prev => [...prev, {
         id: `p${Date.now()}`,
@@ -62,28 +78,42 @@ export default function VoiceLab() {
       
       showToast("Voice Neuralized Successfully!", "success");
       soundEngine?.play("success");
-      setIsNeuralizing(false);
     } catch (error: any) {
       console.error("[Voice Lab] Critical Voice Error:", error);
+      showToast(error.message || "Voice Neuralization Failure", "error");
+      soundEngine?.play("error");
+    } finally {
       setIsNeuralizing(false);
-      alert(`CRITICAL ERROR: ${error.message}`);
-      showToast(error.message, "error");
     }
   };
 
   const handlePreviewVoice = (id: string, name: string) => {
-    console.log(`[Voice Lab] Previewing Voice Identity: ${name} (ID: ${id})`);
     soundEngine?.play("click");
-    showToast(`Playing sample: ${name}`, "info");
+    showToast(`Streaming Neural Identity: ${name}`, "info");
+    // In a real app, this would play an actual audio sample from the backend
   };
 
-  const handleRefreshIdentities = () => {
-    console.log("[Voice Lab] Refreshing Neural Identities from secure vault...");
-    showToast("Refreshing Vault...", "info");
+  const handleRefreshIdentities = async () => {
+    if (!isSystemOnline) return;
+    showToast("Syncing with Neural Vault...", "info");
+    soundEngine?.play("process");
+    try {
+      // Simulate sync
+      await new Promise(r => setTimeout(r, 1500));
+      showToast("Neural Identities Synced", "success");
+    } catch {
+      showToast("Sync Failed", "error");
+    }
   };
 
   return (
-    <div className="flex flex-col gap-10 lg:gap-16 pb-24 lg:pb-20">
+    <div className="flex flex-col gap-10 lg:gap-16 pb-24 lg:pb-20 relative">
+      {!isSystemOnline && (
+        <div className="fixed top-0 left-0 w-full h-12 bg-red-600/20 backdrop-blur-3xl border-b border-red-600/30 z-[9999] flex items-center justify-center gap-4">
+           <div className="w-2 h-2 rounded-full bg-red-500 animate-ping"></div>
+           <p className="text-[10px] font-black uppercase tracking-[3px] text-red-200">System Maintenance: Neural Voice Engine Offline.</p>
+        </div>
+      )}
       
       {/* Header */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-white/5 pb-8">
@@ -111,8 +141,8 @@ export default function VoiceLab() {
         {/* Left: Upload Zone */}
         <div className="flex flex-col gap-8">
            <div 
-             className="p-10 lg:p-14 bg-white/2 border-2 border-dashed border-white/5 rounded-[48px] flex flex-col items-center text-center cursor-pointer active:scale-[0.98] transition-transform"
-             onClick={() => !isNeuralizing && fileInputRef.current?.click()}
+             className={`p-10 lg:p-14 bg-white/2 border-2 border-dashed border-white/5 rounded-[48px] flex flex-col items-center text-center cursor-pointer transition-all ${!isSystemOnline ? 'opacity-50 grayscale cursor-not-allowed' : 'hover:border-[#a855f733] active:scale-[0.98]'}`}
+             onClick={() => isSystemOnline && !isNeuralizing && fileInputRef.current?.click()}
            >
               <div className="w-20 h-20 bg-white/3 rounded-3xl flex items-center justify-center mb-10 border border-white/5 shadow-2xl">
                  {isNeuralizing ? <Loader2 size={32} className="text-[#a855f7] animate-spin" /> : <Upload size={32} className="text-[#a855f7]" />}
@@ -122,8 +152,12 @@ export default function VoiceLab() {
                  Upload a 10-second vocal sample for zero-shot synthesis.
               </p>
               <button 
-                disabled={isNeuralizing}
-                className={`h-14 lg:h-16 w-full font-black rounded-2xl text-[11px] uppercase tracking-[4px] border-none shadow-2xl active:scale-95 transition-all ${isNeuralizing ? 'bg-white/5 text-[#404040] cursor-not-allowed' : 'bg-white text-black cursor-pointer'}`}
+                disabled={isNeuralizing || !isSystemOnline}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isSystemOnline) fileInputRef.current?.click();
+                }}
+                className={`h-14 lg:h-16 w-full font-black rounded-2xl text-[11px] uppercase tracking-[4px] border-none shadow-2xl transition-all ${isNeuralizing || !isSystemOnline ? 'bg-white/5 text-[#404040] cursor-not-allowed' : 'bg-white text-black cursor-pointer hover:bg-[#a855f7] hover:text-white'}`}
               >
                  {isNeuralizing ? "Synthesizing..." : "Start Clone"}
               </button>
@@ -150,8 +184,8 @@ export default function VoiceLab() {
                  </h3>
                  <RefreshCw 
                     size={20} 
-                    className="text-[#404040] cursor-pointer hover:text-white transition-colors" 
-                    onClick={handleRefreshIdentities}
+                    className={`text-[#404040] transition-colors ${!isSystemOnline ? 'cursor-not-allowed' : 'cursor-pointer hover:text-white'}`}
+                    onClick={() => isSystemOnline && handleRefreshIdentities()}
                  />
               </div>
 

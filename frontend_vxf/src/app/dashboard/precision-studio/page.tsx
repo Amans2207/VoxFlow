@@ -138,8 +138,20 @@ export default function PrecisionStudio() {
     }
   };
 
+  const checkSafety = (text: string) => {
+    const sensitiveNames = ['Modi', 'Kohli', 'Dhoni', 'SRK', 'Salman', 'Modiji', 'Amitabh', 'Celebrity', 'Artist'];
+    return sensitiveNames.some(name => text.toLowerCase().includes(name.toLowerCase()));
+  };
+
   const startAutoPilot = async () => {
     if (!isSystemOnline) return;
+
+    // Legal Safety Check
+    const hasSensitiveContent = aiFiles.some(f => checkSafety(f)); // Mock check on filenames
+    if (hasSensitiveContent) {
+      showToast("Legal: Ensure you have rights for commercial voice usage.", "info");
+    }
+
     setIsAiProcessing(true);
     showToast("Neural Auto-Pilot Initialized", "info");
     try {
@@ -675,13 +687,18 @@ export default function PrecisionStudio() {
                          <div className={`absolute w-2.5 h-2.5 bg-white rounded-full top-0.75 transition-all duration-300 ${isUpscaling ? 'right-0.75' : 'left-0.75'}`} style={{ top: '3px' }} />
                       </div>
                    </div>
-                   <button 
-                      disabled={isRendering || !videoFile}
-                      onClick={() => setIsRendering(true)}
-                      className={`h-24 w-full rounded-[32px] font-black text-[12px] uppercase tracking-[8px] shadow-3xl transition-all border-none ${isRendering || !videoFile ? 'bg-white/5 text-[#262626] cursor-not-allowed' : 'bg-white text-black cursor-pointer hover:bg-[#10b981] hover:text-white hover:scale-[1.02] active:scale-95'}`}
-                   >
-                      {isRendering ? "Finalizing Masterpiece..." : "Export Neural Render"}
-                   </button>
+                    <button 
+                       disabled={isRendering || !videoFile}
+                       onClick={() => {
+                          if (checkSafety(videoFile || "")) {
+                             showToast("Legal: Celebrity Voice Check Active. Ensure you have commercial rights.", "info");
+                          }
+                          setIsRendering(true);
+                       }}
+                       className={`h-24 w-full rounded-[32px] font-black text-[12px] uppercase tracking-[8px] shadow-3xl transition-all border-none ${isRendering || !videoFile ? 'bg-white/5 text-[#262626] cursor-not-allowed' : 'bg-white text-black cursor-pointer hover:bg-[#10b981] hover:text-white hover:scale-[1.02] active:scale-95'}`}
+                    >
+                       {isRendering ? "Finalizing Masterpiece..." : "Export Neural Render"}
+                    </button>
                 </div>
                 </div>
              </aside>

@@ -34,6 +34,7 @@ import { AIProvider } from "@/context/AIContext";
 import AIProgressWrapper from "@/components/AIProgressWrapper";
 
 import { UploadProvider } from "@/context/UploadContext";
+import { AuthProvider } from "@/components/AuthProvider";
 
 export default function RootLayout({
   children,
@@ -44,17 +45,19 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${sora.variable}`} suppressHydrationWarning>
       <body className="" style={{ fontFamily: "var(--font-inter), sans-serif" }} suppressHydrationWarning>
         <ToastProvider>
-          <UploadProvider>
-            <AIProvider>
-              <ThemeProvider>
-                <MaintenanceWrapper>
-                  {children}
-                </MaintenanceWrapper>
-                <ThemeSwitcher />
-                <AIProgressWrapper />
-              </ThemeProvider>
-            </AIProvider>
-          </UploadProvider>
+          <AuthProvider>
+            <UploadProvider>
+              <AIProvider>
+                <ThemeProvider>
+                  <MaintenanceWrapper>
+                    {children}
+                  </MaintenanceWrapper>
+                  <ThemeSwitcher />
+                  <AIProgressWrapper />
+                </ThemeProvider>
+              </AIProvider>
+            </UploadProvider>
+          </AuthProvider>
         </ToastProvider>
       </body>
     </html>
