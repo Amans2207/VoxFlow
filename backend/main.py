@@ -347,5 +347,5 @@ if __name__ == "__main__":
     import uvicorn
     # Use PORT from environment or default to 5000
     port = int(os.environ.get("PORT", 5000))
-    print(f"🚀 Neural Core: Ignition on port {port}")
+    print(f"Neural Core: Ignition on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)

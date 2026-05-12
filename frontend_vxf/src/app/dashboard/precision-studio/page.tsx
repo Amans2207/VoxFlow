@@ -5,7 +5,7 @@ import {
   Film, Monitor, Smartphone, Square, Scissors, 
   Play, Pause, SkipBack, SkipForward, Layers, 
   Settings2, Wand2, Plus, Music, ChevronRight,
-  Type, Image as ImageIcon, Volume2, Trash2
+  Type, Image as ImageIcon, Volume2, Trash2, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/Toast';
