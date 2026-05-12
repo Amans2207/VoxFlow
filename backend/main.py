@@ -328,6 +328,32 @@ async def export_studio_project(request: ExportRequest, background_tasks: Backgr
     background_tasks.add_task(process_studio_export, request)
     return {"message": "Export Orchestration Started", "project_id": request.project_id}
 
+@app.post("/api/studio/auto-pilot")
+async def process_auto_pilot(request: Request, background_tasks: BackgroundTasks):
+    print('Bhai, request mil gayi backend par! Route: /api/studio/auto-pilot')
+    try:
+        data = await request.json()
+        video_urls = data.get('video_urls', [])
+        
+        background_tasks.add_task(run_autopilot_task, video_urls)
+        return {"status": "success", "message": "Neural Auto-Pilot Initialized"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+async def run_autopilot_task(video_urls):
+    try:
+        output = editor.auto_edit_sequence(video_urls)
+        base_url = "http://127.0.0.1:5000"
+        public_url = f"{base_url}/{output}"
+        await manager.broadcast({
+            "type": "render_status", 
+            "status": "Completed", 
+            "url": public_url, 
+            "message": "AI Auto-Pilot Assembly Complete"
+        })
+    except Exception as e:
+        print(f"Auto-Pilot Error: {e}")
+
 @app.post("/api/marketplace/process")
 async def process_marketplace_item(request: Request, background_tasks: BackgroundTasks):
     print('Bhai, request mil gayi backend par! Route: /api/marketplace/process')
