@@ -443,6 +443,9 @@ export default function PrecisionStudio() {
                       </div>
                    </div>
                 </div>
+
+                <div>
+                   <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-10">Neural Pro Effects</p>
                    <div className="flex flex-col gap-6">
                       <div className="grid grid-cols-2 gap-4">
                          <div 
