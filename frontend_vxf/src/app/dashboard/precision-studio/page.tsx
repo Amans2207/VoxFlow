@@ -5,7 +5,7 @@ import {
   Scissors, Layers, Play, Pause, SkipBack, SkipForward, 
   Upload, CheckCircle2, Loader2, Monitor, Smartphone, 
   Square, Settings2, Plus, Volume2, Type, Film, Image as ImageIcon,
-  Wand2, Music, Mic, Power, Star, Download, Layout
+  Wand2, Music, Mic, Power, Star, Download, Layout, Globe, Zap, Shield, Activity
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { signout } from "@/app/actions/auth";
