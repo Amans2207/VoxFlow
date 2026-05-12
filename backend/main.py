@@ -62,8 +62,17 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(EXPORT_DIR, exist_ok=True)
 
 app = FastAPI(title="VoxFlow AI Production Core")
+from fastapi.responses import FileResponse
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.mount("/exports", StaticFiles(directory="exports"), name="exports")
+
+@app.get("/exports/{filename}")
+async def serve_exports(filename: str):
+    file_path = os.path.join(EXPORT_DIR, filename)
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    return {"detail": "Asset Not Found in Neural Vault"}
+
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
