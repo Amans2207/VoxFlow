@@ -32,6 +32,13 @@ export default function PrecisionStudio() {
   const [aspectRatio, setAspectRatio] = useState<string>('16:9');
   const [audioDucking, setAudioDucking] = useState(false);
   const [isCaptioning, setIsCaptioning] = useState(false);
+  const [faceFollow, setFaceFollow] = useState(false);
+  const [isUpscaling, setIsUpscaling] = useState(false);
+  const [selectedTone, setSelectedTone] = useState<string>('Professional');
+  const [selectedDialect, setSelectedDialect] = useState<string>('Standard');
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [viralScore, setViralScore] = useState(88);
+  const [watermarkEnabled, setWatermarkEnabled] = useState(true);
   const [activeInspectorTab, setActiveInspectorTab] = useState<'properties' | 'assets'>('properties');
   const [intensity, setIntensity] = useState<number>(85);
   const [aiFiles, setAiFiles] = useState<string[]>([]);
@@ -160,6 +167,14 @@ export default function PrecisionStudio() {
                  </button>
               </div>
 
+              {/* Share Review Button */}
+              <button 
+                onClick={() => showToast("Review Link: https://voxflow.ai/review/xr72k", "success")}
+                className="h-10 px-6 rounded-xl bg-white/2 border border-white/5 text-[9px] font-black uppercase tracking-widest text-white hover:bg-[#a855f71a] hover:border-[#a855f733] transition-all flex items-center gap-2 group"
+              >
+                 <Globe size={14} className="text-[#a855f7] group-hover:drop-shadow-[0_0_8px_#a855f7]" /> Share Review
+              </button>
+
               {/* Aspect Ratio Switcher */}
               <div className="hidden lg:flex items-center bg-white/2 p-1 rounded-xl border border-white/5">
                  {['16:9', '9:16', '1:1'].map(r => (
@@ -255,7 +270,7 @@ export default function PrecisionStudio() {
                               </div>
                            </div>
                         </div>
-                     <div className="flex gap-4">
+                        <div className="flex gap-4">
                            <button 
                               onClick={() => { setIsCaptioning(true); setTimeout(() => { setIsCaptioning(false); showToast("Neural Captions Burned", "success"); }, 4000); }}
                               className={`h-14 px-8 rounded-2xl bg-[#10b9811a] text-[10px] font-black uppercase tracking-widest text-[#10b981] hover:bg-[#10b98122] transition-all border border-[#10b98133] flex items-center gap-3 ${isCaptioning ? 'animate-pulse' : ''}`}
@@ -263,11 +278,21 @@ export default function PrecisionStudio() {
                               {isCaptioning ? <Loader2 size={16} className="animate-spin" /> : <Type size={16} />}
                               {isCaptioning ? "Transcribing..." : "Auto-Caption"}
                            </button>
-                           <button className="h-14 px-8 rounded-2xl bg-white/2 text-[10px] font-black uppercase tracking-widest text-[#404040] hover:text-white transition-all border border-white/5 flex items-center gap-3">
-                              <Scissors size={16} /> Split
+                           <button 
+                              onClick={() => { showToast("Analyzing Script for B-Roll...", "info"); setTimeout(() => showToast("4K B-Roll Assets Matched", "success"), 3000); }}
+                              className="h-14 px-8 rounded-2xl bg-white/2 text-[10px] font-black uppercase tracking-widest text-[#404040] hover:text-[#a855f7] transition-all border border-white/5 flex items-center gap-3 hover:shadow-[0_0_20px_#a855f733] hover:border-[#a855f733]"
+                           >
+                              <Star size={16} className="text-[#a855f7]" /> Suggest B-Roll
+                           </button>
+                           <button 
+                              onClick={() => { setIsExtracting(true); setTimeout(() => { setIsExtracting(false); showToast("3 Viral Shorts Extracted", "success"); }, 5000); }}
+                              className={`h-14 px-8 rounded-2xl bg-[#a855f71a] text-[10px] font-black uppercase tracking-widest text-[#a855f7] hover:bg-[#a855f722] transition-all border border-[#a855f733] flex items-center gap-3 ${isExtracting ? 'animate-pulse shadow-[0_0_15px_#a855f733]' : ''}`}
+                           >
+                              {isExtracting ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+                              {isExtracting ? "Extracting..." : "AI Short-Maker"}
                            </button>
                            <button className="h-14 px-8 rounded-2xl bg-white/2 text-[10px] font-black uppercase tracking-widest text-[#404040] hover:text-white transition-all border border-white/5 flex items-center gap-3">
-                              <Layers size={16} /> Trim
+                              <Scissors size={16} /> Split
                            </button>
                         </div>
                      </div>
@@ -380,6 +405,75 @@ export default function PrecisionStudio() {
                 {activeInspectorTab === 'properties' ? (
                    <>
                 <div>
+                   <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-10">Neural Pro Effects</p>
+                   <div className="flex flex-col gap-6">
+                      <div className="grid grid-cols-2 gap-4">
+                         <div 
+                           onClick={() => showToast("Magic Eraser Initialized", "info")}
+                           className="p-6 bg-white/2 border border-white/5 rounded-2xl flex flex-col items-center gap-3 hover:border-[#a855f733] hover:shadow-[0_0_15px_#a855f722] transition-all cursor-pointer group"
+                         >
+                            <Wand2 size={20} className="text-[#a855f7] group-hover:scale-110 transition-transform" />
+                            <span className="text-[9px] font-black text-white uppercase tracking-widest text-center">Magic Eraser</span>
+                         </div>
+                         <div 
+                           onClick={() => showToast("Eye Contact Calibration Active", "info")}
+                           className="p-6 bg-white/2 border border-white/5 rounded-2xl flex flex-col items-center gap-3 hover:border-[#3b82f633] hover:shadow-[0_0_15px_#3b82f622] transition-all cursor-pointer group"
+                         >
+                            <Monitor size={20} className="text-[#3b82f6] group-hover:scale-110 transition-transform" />
+                            <span className="text-[9px] font-black text-white uppercase tracking-widest text-center">Eye Contact</span>
+                         </div>
+                      </div>
+
+                      <div className="flex items-center justify-between p-6 bg-white/2 rounded-2xl border border-white/5 group hover:border-[#10b98133] transition-all">
+                         <div className="flex items-center gap-4">
+                            <Activity size={16} className={faceFollow ? 'text-[#10b981]' : 'text-[#404040]'} />
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${faceFollow ? 'text-white' : 'text-[#404040]'}`}>Smart Face Follow</span>
+                         </div>
+                         <div 
+                            onClick={() => setFaceFollow(!faceFollow)}
+                            className={`w-10 h-5 rounded-full relative transition-all duration-300 cursor-pointer ${faceFollow ? 'bg-[#10b981]' : 'bg-white/5'}`}
+                         >
+                            <div className={`absolute w-3.5 h-3.5 bg-white rounded-full top-0.75 transition-all duration-300 ${faceFollow ? 'right-0.75' : 'left-0.75'}`} style={{ top: '3px' }} />
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div>
+                   <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-10">Voice Lab 2.0</p>
+                   <div className="flex flex-col gap-8">
+                      <div className="flex flex-col gap-4">
+                         <p className="text-[10px] font-black text-white uppercase tracking-widest">Regional Dialects</p>
+                         <div className="grid grid-cols-2 gap-3">
+                            {['Bambaiya', 'Hyderabadi', 'Bihari', 'Standard'].map(d => (
+                              <button 
+                                key={d}
+                                onClick={() => setSelectedDialect(d)}
+                                className={`h-10 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border ${selectedDialect === d ? 'bg-white text-black border-white' : 'bg-white/2 text-[#404040] border-white/5'}`}
+                              >
+                                 {d}
+                              </button>
+                            ))}
+                         </div>
+                      </div>
+                      <div className="flex flex-col gap-4">
+                         <p className="text-[10px] font-black text-white uppercase tracking-widest">Emotional Tone</p>
+                         <div className="grid grid-cols-2 gap-3">
+                            {['Professional', 'Excited', 'Sarcastic', 'Angry', 'Whisper', 'News'].map(tone => (
+                              <button 
+                                key={tone}
+                                onClick={() => setSelectedTone(tone)}
+                                className={`h-10 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border ${selectedTone === tone ? 'bg-[#a855f7] text-white border-[#a855f7] shadow-[0_0_15px_#a855f733]' : 'bg-white/2 text-[#404040] border-white/5 hover:border-white/20'}`}
+                              >
+                                 {tone}
+                              </button>
+                            ))}
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div>
                    <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-10">Neural Effects</p>
                    <div className="flex flex-col gap-12">
                       <div className="flex flex-col gap-6">
@@ -399,45 +493,27 @@ export default function PrecisionStudio() {
 
                       <div className="flex items-center justify-between p-6 bg-white/2 rounded-2xl border border-white/5">
                          <div className="flex items-center gap-4">
-                            <Volume2 size={16} className={audioDucking ? 'text-[#10b981]' : 'text-[#404040]'} />
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${audioDucking ? 'text-white' : 'text-[#404040]'}`}>Ambience AI (Ducking)</span>
+                            <Shield size={16} className={watermarkEnabled ? 'text-[#404040]' : 'text-[#10b981]'} />
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${watermarkEnabled ? 'text-[#404040]' : 'text-white'}`}>Clean Export (No Watermark)</span>
                          </div>
                          <div 
-                            onClick={() => setAudioDucking(!audioDucking)}
-                            className={`w-10 h-5 rounded-full relative transition-all duration-300 cursor-pointer ${audioDucking ? 'bg-[#10b981]' : 'bg-white/5'}`}
+                            onClick={() => setWatermarkEnabled(!watermarkEnabled)}
+                            className={`w-10 h-5 rounded-full relative transition-all duration-300 cursor-pointer ${!watermarkEnabled ? 'bg-[#10b981]' : 'bg-white/5'}`}
                          >
-                            <div className={`absolute w-3.5 h-3.5 bg-white rounded-full top-0.75 transition-all duration-300 ${audioDucking ? 'right-0.75' : 'left-0.75'}`} style={{ top: '3px' }} />
+                            <div className={`absolute w-3.5 h-3.5 bg-white rounded-full top-0.75 transition-all duration-300 ${!watermarkEnabled ? 'right-0.75' : 'left-0.75'}`} style={{ top: '3px' }} />
                          </div>
                       </div>
 
-                      <div className="flex flex-col gap-8">
+                      <div className="p-6 bg-gradient-to-br from-[#a855f71a] to-transparent rounded-2xl border border-[#a855f71a] flex flex-col gap-4">
                          <div className="flex justify-between items-center">
-                            <p className="text-[11px] font-black text-white uppercase tracking-widest">Neural Warp Intensity</p>
-                            <p className="text-[11px] font-black text-[#10b981] font-mono">{intensity}%</p>
+                            <span className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2"><Zap size={14} className="text-[#a855f7]" /> Viral Pulse AI</span>
+                            <span className="text-xl font-black text-[#a855f7]">{viralScore}%</span>
                          </div>
-                         <div className="relative pt-1">
-                            <input 
-                               type="range" 
-                               min="0" max="100" 
-                               value={intensity}
-                               onChange={(e) => setIntensity(parseInt(e.target.value))}
-                               className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-[#10b981]" 
-                            />
-                            <div className="absolute top-0 h-1.5 bg-[#10b98133] rounded-full pointer-events-none" style={{ width: `${intensity}%` }}></div>
+                         <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-[#a855f7] shadow-[0_0_10px_#a855f7]" style={{ width: `${viralScore}%` }} />
                          </div>
+                         <p className="text-[8px] font-bold text-[#404040] uppercase tracking-widest">High scene density detected. Potential for 1M+ views.</p>
                       </div>
-                   </div>
-                </div>
-
-                <div>
-                   <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-10">Manual Transitions</p>
-                   <div className="grid grid-cols-1 gap-4">
-                      {['Neural Wipe', 'Cross Bloom', 'Hard Pulse', 'Cyber-Slide'].map(t => (
-                        <button key={t} className="h-16 px-8 rounded-2xl bg-white/2 border border-white/5 text-[10px] font-black text-[#404040] uppercase tracking-widest hover:text-white hover:border-white/20 transition-all text-left flex items-center justify-between group">
-                           {t}
-                           <div className="w-2 h-2 rounded-full bg-white/5 group-hover:bg-[#10b981]"></div>
-                        </button>
-                      ))}
                    </div>
                 </div>
                 </>
@@ -468,11 +544,20 @@ export default function PrecisionStudio() {
                   </div>
                 )}
 
-                <div className="mt-auto">
+                <div className="mt-auto flex flex-col gap-4">
+                   <div className="flex items-center justify-between p-5 bg-white/2 rounded-[24px] border border-white/5 group hover:border-[#a855f733] transition-all cursor-pointer" onClick={() => setIsUpscaling(!isUpscaling)}>
+                      <div className="flex items-center gap-3">
+                         <Zap size={16} className={isUpscaling ? 'text-[#a855f7] drop-shadow-[0_0_8px_#a855f7]' : 'text-[#404040]'} />
+                         <span className={`text-[10px] font-black uppercase tracking-widest ${isUpscaling ? 'text-white' : 'text-[#404040]'}`}>Neural 4K Upscaler</span>
+                      </div>
+                      <div className={`w-8 h-4 rounded-full relative transition-all duration-300 ${isUpscaling ? 'bg-[#a855f7]' : 'bg-white/5'}`}>
+                         <div className={`absolute w-2.5 h-2.5 bg-white rounded-full top-0.75 transition-all duration-300 ${isUpscaling ? 'right-0.75' : 'left-0.75'}`} style={{ top: '3px' }} />
+                      </div>
+                   </div>
                    <button 
                       disabled={isRendering || !videoFile}
                       onClick={() => setIsRendering(true)}
-                      className={`h-24 w-full rounded-[32px] font-black text-[12px] uppercase tracking-[8px] shadow-3xl transition-all border-none ${isRendering || !videoFile ? 'bg-white/5 text-[#262626] cursor-not-allowed' : 'bg-white text-black cursor-pointer hover:bg-[#10b981] hover:text-white hover:scale-[1.02]'}`}
+                      className={`h-24 w-full rounded-[32px] font-black text-[12px] uppercase tracking-[8px] shadow-3xl transition-all border-none ${isRendering || !videoFile ? 'bg-white/5 text-[#262626] cursor-not-allowed' : 'bg-white text-black cursor-pointer hover:bg-[#10b981] hover:text-white hover:scale-[1.02] active:scale-95'}`}
                    >
                       {isRendering ? "Finalizing Masterpiece..." : "Export Neural Render"}
                    </button>
