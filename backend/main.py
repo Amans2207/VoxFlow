@@ -109,10 +109,11 @@ ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000,http:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Open for deployment, can be restricted via ALLOWED_ORIGINS env
+    allow_origins=["*"], # Open for production flexibility
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+    expose_headers=["Content-Disposition"], # Needed for file downloads
 )
 
 @app.get("/api/health")

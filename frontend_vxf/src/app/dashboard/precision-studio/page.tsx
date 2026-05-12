@@ -68,31 +68,57 @@ export default function PrecisionStudio() {
     { id: 't3', name: 'Neural Overlays', type: 'overlay', color: '#a855f7', width: '40%', offset: '10%' }
   ]);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:5000";
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+
+  // Global API Wrapper with Retry Mechanism
+  const safeFetch = async (url: string, options: RequestInit = {}, retries = 2): Promise<any> => {
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+      return await response.json();
+    } catch (err) {
+      if (retries > 0) {
+        console.warn(`Fetch failed, retrying... (${retries} left)`);
+        await new Promise(r => setTimeout(r, 1000));
+        return safeFetch(url, options, retries - 1);
+      }
+      throw err;
+    }
+  };
+
+  useEffect(() => {
+    const checkConnectivity = async () => {
+      try {
+        const data = await safeFetch(`${API_BASE}/api/health`, {}, 1);
+        setIsSystemOnline(data.status === 'ok');
+      } catch {
+        setIsSystemOnline(false);
+      }
+    };
+    checkConnectivity();
+  }, [API_BASE]);
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !isSystemOnline) return;
 
     const localUrl = URL.createObjectURL(file);
     setVideoFile(localUrl);
     showToast("Source Media Ingested", "success");
 
-    // Also upload to server for processing
     const fd = new FormData();
     fd.append('file', file);
     try {
-      const res = await fetch(`${API_BASE}/api/upload`, { method: 'POST', body: fd });
-      const data = await res.json();
+      const data = await safeFetch(`${API_BASE}/api/upload`, { method: 'POST', body: fd });
       console.log("Server Upload Success:", data.url);
     } catch (err) {
-      console.error("Upload Error:", err);
+      showToast("Upload Connection Failed", "error");
     }
   };
 
   const handleAiFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+    if (files.length === 0 || !isSystemOnline) return;
     setIsAiProcessing(true);
     showToast(`Ingesting ${files.length} Assets...`, "info");
     try {
@@ -100,29 +126,28 @@ export default function PrecisionStudio() {
       for (const file of files) {
         const fd = new FormData();
         fd.append('file', file);
-        const res = await fetch(`${API_BASE}/api/upload`, { method: 'POST', body: fd });
-        const data = await res.json();
+        const data = await safeFetch(`${API_BASE}/api/upload`, { method: 'POST', body: fd });
         urls.push(data.url);
       }
       setAiFiles(prev => [...prev, ...urls]);
       showToast("Media Ready for Auto-Pilot", "success");
     } catch (err) {
-      showToast("Upload Failed", "error");
+      showToast("Upload Failed - Check Connection", "error");
     } finally {
       setIsAiProcessing(false);
     }
   };
 
   const startAutoPilot = async () => {
+    if (!isSystemOnline) return;
     setIsAiProcessing(true);
     showToast("Neural Auto-Pilot Initialized", "info");
     try {
-      const res = await fetch(`${API_BASE}/api/studio/auto-pilot`, {
+      const data = await safeFetch(`${API_BASE}/api/studio/auto-pilot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ video_urls: aiFiles })
       });
-      const data = await res.json();
       if (data.status === 'success') {
         setTimeout(() => {
           setResultUrl(`${API_BASE}/exports/demo_viral_clip.mp4`);
@@ -131,7 +156,7 @@ export default function PrecisionStudio() {
         }, 5000);
       }
     } catch (err) {
-      showToast("Assembly Failed", "error");
+      showToast("Assembly Failed - Backend Unreachable", "error");
       setIsAiProcessing(false);
     }
   };
@@ -146,6 +171,12 @@ export default function PrecisionStudio() {
 
   return (
     <div className="flex h-screen w-full bg-[#050505] text-white overflow-hidden font-sans">
+      {!isSystemOnline && (
+        <div className="fixed top-0 left-0 w-full h-12 bg-red-600/20 backdrop-blur-3xl border-b border-red-600/30 z-[9999] flex items-center justify-center gap-4">
+           <div className="w-2 h-2 rounded-full bg-red-500 animate-ping"></div>
+           <p className="text-[10px] font-black uppercase tracking-[3px] text-red-200">System Maintenance: Neural Pipeline Offline. Please check your connection.</p>
+        </div>
+      )}
       <div className="flex-1 flex flex-col min-w-0 bg-[#050505] relative">
         
         {/* Header with Mode Toggle */}
