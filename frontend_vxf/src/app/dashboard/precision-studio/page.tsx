@@ -52,6 +52,7 @@ export default function PrecisionStudio() {
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [targetLang, setTargetLang] = useState("hi-IN");
+  const [isSystemOnline, setIsSystemOnline] = useState(true);
 
   const INDIAN_LANGUAGES = [
     { code: 'hi-IN', name: 'Hindi (हिंदी)', flag: '🇮🇳' },
