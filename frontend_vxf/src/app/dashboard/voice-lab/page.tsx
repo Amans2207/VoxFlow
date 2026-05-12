@@ -8,11 +8,13 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/Toast';
 import { soundEngine } from '@/utils/SoundEngine';
+import { useCredits } from '@/context/CreditsContext';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:5000";
 
 export default function VoiceLab() {
   const { showToast } = useToast();
+  const { deductCredits } = useCredits();
   const [isSystemOnline, setIsSystemOnline] = useState(true);
   const [isNeuralizing, setIsNeuralizing] = useState(false);
   const [voiceProfiles, setVoiceProfiles] = useState([
@@ -59,6 +61,7 @@ export default function VoiceLab() {
     soundEngine?.play("process");
     
     try {
+      await deductCredits(5.0); // Cost for Neural Capture
       const formData = new FormData();
       formData.append('file', file);
       formData.append('user_id', 'demo_user');

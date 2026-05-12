@@ -11,6 +11,7 @@ import { useToast } from "@/components/Toast";
 import { signout } from "@/app/actions/auth";
 import { useSession } from "next-auth/react";
 import { User as UserIcon } from "lucide-react";
+import { useCredits } from "@/context/CreditsContext";
 
 interface Track {
   id: string;
@@ -24,6 +25,7 @@ interface Track {
 export default function PrecisionStudio() {
   const { data: session } = useSession();
   const { showToast } = useToast();
+  const { deductCredits } = useCredits();
   const videoRef = useRef<HTMLVideoElement>(null);
   
   const [activeMode, setActiveMode] = useState<'manual' | 'ai'>('manual');
@@ -158,6 +160,7 @@ export default function PrecisionStudio() {
     setIsAiProcessing(true);
     showToast("Neural Auto-Pilot Initialized", "info");
     try {
+      await deductCredits(2.5); // Cost for AI Synthesis
       const data = await safeFetch(`${API_BASE}/api/studio/auto-pilot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -715,6 +718,7 @@ export default function PrecisionStudio() {
                           if (checkSafety(videoFile || "")) {
                              showToast("Legal: Celebrity Voice Check Active. Ensure you have commercial rights.", "info");
                           }
+                          deductCredits(1.0); // Cost for manual export
                           setIsRendering(true);
                        }}
                        className={`h-24 w-full rounded-[32px] font-black text-[12px] uppercase tracking-[8px] shadow-3xl transition-all border-none ${isRendering || !videoFile ? 'bg-white/5 text-[#262626] cursor-not-allowed' : 'bg-white text-black cursor-pointer hover:bg-[#10b981] hover:text-white hover:scale-[1.02] active:scale-95'}`}

@@ -10,31 +10,25 @@ import {
   Menu, X, Power, User, Bell, Shield
 } from "lucide-react";
 import { UploadProvider } from "@/context/UploadContext";
+import { useCredits } from "@/context/CreditsContext";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [balance, setBalance] = useState<number>(305.0);
+  const { balance } = useCredits();
   const [isAdmin, setIsAdmin] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        if (profile) {
-          setBalance(profile.credit_balance || 0);
-          if (profile.role === 'Admin' || user.email === 'admin@voxflow.ai') {
-            setIsAdmin(true);
-          }
-        }
-      }
+    // Admin check logic stays here for now
+    const checkAdmin = async () => {
+       const supabase = createClient();
+       const { data: { user } } = await supabase.auth.getUser();
+       if (user?.email === 'admin@voxflow.ai') setIsAdmin(true);
     };
-    fetchProfile();
+    checkAdmin();
   }, []);
 
   const menuItems = [

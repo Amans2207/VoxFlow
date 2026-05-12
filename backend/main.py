@@ -116,7 +116,7 @@ app.add_middleware(
     expose_headers=["Content-Disposition"], # Needed for file downloads
 )
 
-class GoogleAuthRequest(BaseModel):
+class RegisterRequest(BaseModel):
     email: str
     name: str = ""
     image: str = ""
@@ -125,20 +125,31 @@ class GoogleAuthRequest(BaseModel):
 async def health_check():
     return {"status": "ok"}
 
+@app.post("/api/register")
 @app.post("/api/auth/google")
-async def google_auth(request: GoogleAuthRequest):
-    print(f"[Auth] Google Sign-In: {request.email}")
-    # Mock DB Logic: Check if user exists, if not create and add 10 credits
-    # In production, this would use the Supabase client
+async def register_user(request: RegisterRequest):
+    print(f"[Auth] Syncing User: {request.email}")
+    # Logic: Check DB, if new, add 10 credits. 
+    # For now, simulate returning a user object with updated balance.
     return {
         "status": "success",
         "user": {
             "email": request.email,
             "name": request.name,
-            "credits": 10, # Welcome Gift
+            "credits": 10.0, 
             "is_new": True
         }
     }
+
+# Persistence: Endpoint to fetch/update credits
+@app.get("/api/user/credits")
+async def get_user_credits(email: str):
+    return {"email": email, "credits": 305.0} # Placeholder
+
+@app.post("/api/user/credits/deduct")
+async def deduct_credits(email: str, amount: float):
+    # Logic to deduct credits after synthesis
+    return {"status": "success", "new_balance": 305.0 - amount}
 
 # Route Separation
 from routes.autopilot_routes import autopilot_bp

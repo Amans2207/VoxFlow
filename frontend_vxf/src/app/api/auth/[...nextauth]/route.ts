@@ -12,8 +12,8 @@ const handler = NextAuth({
     async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
         try {
-          // Sync with our backend
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000"}/api/auth/google`, {
+          // Sync with our backend registration gateway
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000"}/api/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

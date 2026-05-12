@@ -35,6 +35,7 @@ import AIProgressWrapper from "@/components/AIProgressWrapper";
 
 import { UploadProvider } from "@/context/UploadContext";
 import { AuthProvider } from "@/components/AuthProvider";
+import { CreditsProvider } from "@/context/CreditsContext";
 
 export default function RootLayout({
   children,
@@ -46,17 +47,19 @@ export default function RootLayout({
       <body className="" style={{ fontFamily: "var(--font-inter), sans-serif" }} suppressHydrationWarning>
         <ToastProvider>
           <AuthProvider>
-            <UploadProvider>
-              <AIProvider>
-                <ThemeProvider>
-                  <MaintenanceWrapper>
-                    {children}
-                  </MaintenanceWrapper>
-                  <ThemeSwitcher />
-                  <AIProgressWrapper />
-                </ThemeProvider>
-              </AIProvider>
-            </UploadProvider>
+            <CreditsProvider>
+              <UploadProvider>
+                <AIProvider>
+                  <ThemeProvider>
+                    <MaintenanceWrapper>
+                      {children}
+                    </MaintenanceWrapper>
+                    <ThemeSwitcher />
+                    <AIProgressWrapper />
+                  </ThemeProvider>
+                </AIProvider>
+              </UploadProvider>
+            </CreditsProvider>
           </AuthProvider>
         </ToastProvider>
       </body>
