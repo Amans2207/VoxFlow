@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { signout } from "@/app/actions/auth";
+import { useSession } from "next-auth/react";
+import { User as UserIcon } from "lucide-react";
 
 interface Track {
   id: string;
@@ -20,6 +22,7 @@ interface Track {
 }
 
 export default function PrecisionStudio() {
+  const { data: session } = useSession();
   const { showToast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
   
@@ -242,12 +245,31 @@ export default function PrecisionStudio() {
            </div>
 
            <div className="flex items-center gap-6">
+              {session?.user && (
+                <div className="flex items-center gap-4 mr-4 border-r border-white/5 pr-6 hidden md:flex">
+                   <div className="text-right">
+                      <p className="text-[9px] font-black text-white uppercase tracking-widest">{session.user.name}</p>
+                      <p className="text-[7px] font-black text-[#404040] uppercase tracking-[2px]">Pro Creator</p>
+                   </div>
+                   {session.user.image ? (
+                     <img src={session.user.image} alt="Profile" className="w-10 h-10 rounded-xl border border-white/10 shadow-2xl object-cover" />
+                   ) : (
+                     <div className="w-10 h-10 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center">
+                       <UserIcon size={16} className="text-[#404040]" />
+                     </div>
+                   )}
+                </div>
+              )}
               <div className="flex items-center gap-3 bg-white/2 px-4 h-12 rounded-2xl border border-white/5">
                  <div className="w-2 h-2 bg-[#10b981] rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
                  <span className="text-[10px] font-black uppercase tracking-widest text-[#404040]">Neural Engine Online</span>
               </div>
               <button 
-                onClick={() => signout()}
+                onClick={() => {
+                  if (window.confirm("Disconnect from Neural Vault?")) {
+                     signout();
+                  }
+                }}
                 className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-[#404040] hover:text-white transition-all border border-white/5"
               >
                  <Power size={18} />
