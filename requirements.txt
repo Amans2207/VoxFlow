@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+python-multipart
+python-dotenv
+supabase
+runpod
+requests
+static-ffmpeg
+moviepy==1.0.3
+faster-whisper
+torch --index-url https://download.pytorch.org/whl/cu121
+torchaudio --index-url https://download.pytorch.org/whl/cu121
+transformers
+scipy
+soundfile
+numpy
