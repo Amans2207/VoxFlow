@@ -6,7 +6,7 @@ try:
 except:
     pass
 import subprocess
-from fastapi import FastAPI, BackgroundTasks, WebSocket, WebSocketDisconnect, UploadFile, File
+from fastapi import FastAPI, BackgroundTasks, WebSocket, WebSocketDisconnect, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -235,7 +235,7 @@ async def generate_video_metadata(request: MetadataRequest):
     }
 
 @app.post("/api/clone")
-async def upload_voice_clone(file: UploadFile = File(...), user_id: str = "anonymous"):
+async def upload_voice_clone(file: UploadFile = File(...), user_id: str = Form("anonymous")):
     try:
         os.makedirs("user_voices", exist_ok=True)
         file_path = f"user_voices/{user_id}_ref.wav"

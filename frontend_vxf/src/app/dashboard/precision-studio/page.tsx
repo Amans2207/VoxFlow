@@ -35,6 +35,17 @@ export default function PrecisionStudio() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.play().catch(e => console.error("Playback failed:", e));
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [isPlaying]);
   
   const [tracks, setTracks] = useState<Track[]>([
     { id: 't1', name: 'Master Video', type: 'video', color: '#10b981', width: '80%', offset: '0%' },
@@ -108,10 +119,13 @@ export default function PrecisionStudio() {
         },
         body: JSON.stringify({
           project_id: `studio_${Date.now()}`,
+          user_id: "demo_user",
+          tracks: {}, // Explicitly pass empty dict if none
           config: {
             aspect_ratio: aspectRatio,
             layers: activeLayers,
-            tracks: tracks
+            tracks: tracks,
+            video_url: uploadedVideoUrl
           }
         }),
       });
@@ -212,7 +226,13 @@ export default function PrecisionStudio() {
                }}
              >
                 {uploadedVideoUrl ? (
-                   <video src={uploadedVideoUrl} className="w-full h-full object-cover" />
+                   <video 
+                    ref={videoRef}
+                    src={uploadedVideoUrl} 
+                    className="w-full h-full object-cover" 
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                   />
                 ) : (
                    <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-[2s]" />
                 )}
