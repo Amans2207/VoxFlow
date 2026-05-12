@@ -376,7 +376,8 @@ async def run_marketplace_pipeline(template, video_urls, user_id):
         output_video = editor.export_project(render_data)
         
         # 3. Broadcast status
-        base_url = "http://localhost:5000"
+        port = os.environ.get("PORT", 5000)
+        base_url = f"http://127.0.0.1:{port}" # Use 127.0.0.1 for maximum compatibility
         public_url = f"{base_url}/{output_video}"
         await manager.broadcast({
             "type": "render_status", 
