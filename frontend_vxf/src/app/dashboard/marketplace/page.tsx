@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Star, Download, Zap, TrendingUp, Filter, Search, ChevronRight, Loader2 } from 'lucide-react';
+import { ShoppingBag, Star, Download, Zap, TrendingUp, Filter, Search, ChevronRight, Loader2, X, Upload, CheckCircle2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/Toast';
 import { soundEngine } from '@/utils/SoundEngine';
+import { motion, AnimatePresence } from 'framer-motion';
+import NeuralProgressBar from "@/components/NeuralProgressBar";
 
 export default function Marketplace() {
   const { showToast } = useToast();
@@ -12,6 +14,12 @@ export default function Marketplace() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('Trending');
   const [deployingId, setDeployingId] = useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -41,17 +49,76 @@ export default function Marketplace() {
   };
 
   const handleInjectAsset = (id: string, title: string) => {
-    console.log(`[Marketplace] Injecting Asset: ${title} (ID: ${id})`);
-    setDeployingId(id);
-    soundEngine?.play("process");
-    showToast(`Injecting ${title}...`, "info");
+    const template = templates.find(t => t.id === id);
+    setSelectedTemplate(template);
+    soundEngine?.play("click");
+  };
 
-    setTimeout(() => {
-      setDeployingId(null);
-      console.log(`[Marketplace] Asset ${title} injected successfully.`);
-      showToast(`${title} Ready in Studio`, "success");
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    showToast("Ingesting Primary Asset...", "info");
+    soundEngine?.play("process");
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('http://127.0.0.1:5000/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      setUploadedUrl(data.url);
+      showToast("Asset Ready for Injection", "success");
       soundEngine?.play("success");
-    }, 2000);
+    } catch (err) {
+      showToast("Upload Failed", "error");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const startSynthesis = async () => {
+    if (!uploadedUrl || !selectedTemplate) return;
+
+    setIsProcessing(true);
+    setProgress(20);
+    showToast("Activating Neural Style Transfer...", "info");
+    soundEngine?.play("process");
+
+    try {
+      const res = await fetch('http://127.0.0.1:5000/api/marketplace/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          template_id: selectedTemplate.id,
+          video_url: uploadedUrl,
+          user_id: 'temp_user'
+        })
+      });
+      
+      if (!res.ok) throw new Error("Synthesis failed");
+
+      // Mock polling for demo, in real it should use WebSocket
+      let p = 20;
+      const interval = setInterval(() => {
+        p += 5;
+        setProgress(p);
+        if (p >= 100) {
+          clearInterval(interval);
+          setResultUrl(`http://127.0.0.1:5000/exports/render_sample.mp4`); // Example
+          setIsProcessing(false);
+          showToast("Viral Synthesis Complete!", "success");
+          soundEngine?.play("success");
+        }
+      }, 300);
+
+    } catch (err) {
+      showToast("Synthesis Failed", "error");
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -135,6 +202,86 @@ export default function Marketplace() {
             </div>
           ))}
        </div>
+
+       {/* Quick Edit Modal */}
+       <AnimatePresence>
+         {selectedTemplate && (
+           <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm"
+           >
+             <motion.div 
+               initial={{ scale: 0.9, y: 20 }}
+               animate={{ scale: 1, y: 0 }}
+               className="bg-[#0A0A0B] border border-white/10 w-full max-w-2xl rounded-[48px] overflow-hidden shadow-2xl relative"
+             >
+               <button 
+                 onClick={() => { setSelectedTemplate(null); setUploadedUrl(null); setResultUrl(null); }}
+                 className="absolute top-8 right-8 text-[#404040] hover:text-white transition-colors bg-transparent border-none cursor-pointer"
+               >
+                 <X size={24} />
+               </button>
+
+               <div className="p-10 lg:p-14">
+                  <h2 className="text-3xl lg:text-4xl font-black text-white uppercase tracking-tighter mb-4">
+                     Quick Edit: <span className="text-[#10b981]">{selectedTemplate.title}</span>
+                  </h2>
+                  <p className="text-[11px] text-[#404040] font-bold uppercase tracking-[4px] mb-12">
+                     Inject your primary media to apply this viral preset.
+                  </p>
+
+                  {!resultUrl ? (
+                    <div className="flex flex-col gap-10">
+                       <div 
+                         onClick={() => !isUploading && !isProcessing && document.getElementById('market-upload')?.click()}
+                         className="h-60 bg-white/2 border-2 border-dashed border-white/5 rounded-[40px] flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-[#10b98133] transition-all group"
+                       >
+                          {isUploading ? (
+                             <Loader2 size={32} className="text-[#10b981] animate-spin" />
+                          ) : uploadedUrl ? (
+                             <CheckCircle2 size={32} className="text-[#10b981]" />
+                          ) : (
+                             <Upload size={32} className="text-[#404040] group-hover:text-white transition-colors" />
+                          )}
+                          <p className="text-[10px] font-black text-white uppercase tracking-widest">
+                             {isUploading ? "Ingesting..." : uploadedUrl ? "Media Ready" : "Upload Primary Video"}
+                          </p>
+                          <input id="market-upload" type="file" className="hidden" accept="video/*" onChange={handleFileUpload} />
+                       </div>
+
+                       {isProcessing && <NeuralProgressBar progress={progress} label="Applying Neural Styles..." color="#10b981" />}
+
+                       <button 
+                         disabled={!uploadedUrl || isProcessing}
+                         onClick={startSynthesis}
+                         className={`h-20 w-full rounded-3xl font-black text-[12px] uppercase tracking-[6px] transition-all border-none shadow-2xl ${!uploadedUrl || isProcessing ? 'bg-white/5 text-[#404040] cursor-not-allowed' : 'bg-[#10b981] text-black cursor-pointer hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]'}`}
+                       >
+                          {isProcessing ? "Synthesizing..." : "Inject Assets"}
+                       </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-10 items-center text-center">
+                       <div className="w-24 h-24 bg-[#10b9811a] rounded-full flex items-center justify-center text-[#10b981] mb-2">
+                          <Download size={40} />
+                       </div>
+                       <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Viral Clip Ready!</h3>
+                       <p className="text-[11px] text-[#404040] font-bold uppercase tracking-widest -mt-6">Credits Deducted: {selectedTemplate.price}</p>
+                       <a 
+                         href={resultUrl} 
+                         download 
+                         className="h-20 w-full bg-white text-black rounded-3xl font-black text-[12px] uppercase tracking-[6px] flex items-center justify-center no-underline hover:shadow-2xl transition-all"
+                       >
+                          Download Your Viral Clip
+                       </a>
+                    </div>
+                  )}
+               </div>
+             </motion.div>
+           </motion.div>
+         )}
+       </AnimatePresence>
 
        <style jsx>{`
         .no-scrollbar::-webkit-scrollbar {

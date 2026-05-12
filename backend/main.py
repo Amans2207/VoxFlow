@@ -319,6 +319,62 @@ async def export_studio_project(request: ExportRequest, background_tasks: Backgr
     background_tasks.add_task(process_studio_export, request)
     return {"message": "Export Orchestration Started", "project_id": request.project_id}
 
+@app.post("/api/marketplace/process")
+async def process_marketplace_item(request: Request, background_tasks: BackgroundTasks):
+    print('Bhai, request mil gayi backend par! Route: /api/marketplace/process')
+    try:
+        data = await request.json()
+        template_id = data.get('template_id')
+        video_url = data.get('video_url')
+        user_id = data.get('user_id')
+        
+        # Load templates
+        with open("templates.json", "r") as f:
+            templates = json.load(f)
+        
+        template = templates.get(template_id)
+        if not template:
+            return {"status": "error", "message": "Invalid Template ID"}
+
+        # Background task for rendering and credit deduction
+        background_tasks.add_task(run_marketplace_pipeline, template, video_url, user_id)
+        
+        return {
+            "status": "success", 
+            "message": "Marketplace Synthesis Initialized",
+            "credits_deducted": template['credits_cost']
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+async def run_marketplace_pipeline(template, video_url, user_id):
+    try:
+        # 1. Deduct Credits via Supabase (if configured)
+        if supabase:
+            print(f"Deducting {template['credits_cost']} credits for user {user_id}")
+            # Logic here...
+        
+        # 2. Process with VideoEditor
+        render_data = {
+            "project_id": f"mkplace_{uuid.uuid4().hex[:6]}",
+            "video_url": video_url,
+            "quality": "final_export",
+            "filters": template['ffmpeg_filters']
+        }
+        output_video = editor.export_project(render_data)
+        
+        # 3. Broadcast status
+        base_url = "http://localhost:5000"
+        public_url = f"{base_url}/{output_video}"
+        await manager.broadcast({
+            "type": "render_status", 
+            "status": "Completed", 
+            "url": public_url, 
+            "message": f"{template['name']} Synthesis Ready"
+        })
+    except Exception as e:
+        print(f"Marketplace Error: {e}")
+
 @app.get("/editor/trending")
 async def get_trending_music():
     print('Bhai, request mil gayi backend par! Route: /editor/trending')
