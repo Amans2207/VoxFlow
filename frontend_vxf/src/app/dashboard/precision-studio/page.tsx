@@ -39,7 +39,9 @@ export default function PrecisionStudio() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [viralScore, setViralScore] = useState(88);
   const [watermarkEnabled, setWatermarkEnabled] = useState(true);
-  const [activeInspectorTab, setActiveInspectorTab] = useState<'properties' | 'assets'>('properties');
+  const [vibeUrl, setVibeUrl] = useState("");
+  const [brandLocked, setBrandLocked] = useState(false);
+  const [activeInspectorTab, setActiveInspectorTab] = useState<'properties' | 'assets' | 'ghostwriter' | 'avatar'>('properties');
   const [intensity, setIntensity] = useState<number>(85);
   const [aiFiles, setAiFiles] = useState<string[]>([]);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
@@ -173,6 +175,13 @@ export default function PrecisionStudio() {
                 className="h-10 px-6 rounded-xl bg-white/2 border border-white/5 text-[9px] font-black uppercase tracking-widest text-white hover:bg-[#a855f71a] hover:border-[#a855f733] transition-all flex items-center gap-2 group"
               >
                  <Globe size={14} className="text-[#a855f7] group-hover:drop-shadow-[0_0_8px_#a855f7]" /> Share Review
+              </button>
+
+              <button 
+                onClick={() => showToast("Social Scheduler Active. Select Date/Time.", "info")}
+                className="h-10 px-6 rounded-xl bg-[#10b981] text-black text-[9px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_#10b98166] transition-all flex items-center gap-2"
+              >
+                 <Play size={14} /> Publish & Schedule
               </button>
 
               {/* Aspect Ratio Switcher */}
@@ -382,30 +391,58 @@ export default function PrecisionStudio() {
              )}
           </div>
 
-          {/* Right Inspector - Only for Manual Mode */}
+          {/* Right Inspector */}
           {activeMode === 'manual' && (
              <aside className="w-[400px] border-l border-white/5 flex flex-col bg-[#050505]/50 backdrop-blur-3xl overflow-y-auto no-scrollbar shadow-2xl">
                 {/* Tabs */}
-                <div className="flex border-b border-white/5 h-16 shrink-0">
-                   <button 
-                      onClick={() => setActiveInspectorTab('properties')}
-                      className={`flex-1 text-[10px] font-black uppercase tracking-widest transition-all ${activeInspectorTab === 'properties' ? 'text-white border-b-2 border-white' : 'text-[#404040] hover:text-white/60'}`}
-                   >
-                      Properties
-                   </button>
-                   <button 
-                      onClick={() => setActiveInspectorTab('assets')}
-                      className={`flex-1 text-[10px] font-black uppercase tracking-widest transition-all ${activeInspectorTab === 'assets' ? 'text-white border-b-2 border-white' : 'text-[#404040] hover:text-white/60'}`}
-                   >
-                      Assets
-                   </button>
+                <div className="flex border-b border-white/5 h-16 shrink-0 overflow-x-auto no-scrollbar">
+                   {[
+                     { id: 'properties', label: 'Props', icon: Settings2 },
+                     { id: 'assets', label: 'Assets', icon: Layers },
+                     { id: 'ghostwriter', label: 'Ghost', icon: Type },
+                     { id: 'avatar', label: 'Avatar', icon: Monitor }
+                   ].map(tab => (
+                     <button 
+                        key={tab.id}
+                        onClick={() => setActiveInspectorTab(tab.id as any)}
+                        className={`flex-1 min-w-[80px] flex flex-col items-center justify-center gap-1 transition-all ${activeInspectorTab === tab.id ? 'text-white border-b-2 border-white' : 'text-[#404040] hover:text-white/60'}`}
+                     >
+                        <tab.icon size={14} />
+                        <span className="text-[8px] font-black uppercase tracking-widest">{tab.label}</span>
+                     </button>
+                   ))}
                 </div>
 
                 <div className="p-10 flex flex-col gap-12">
                 {activeInspectorTab === 'properties' ? (
                    <>
                 <div>
-                   <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-10">Neural Pro Effects</p>
+                   <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-10">Neural Intelligence</p>
+                   <div className="flex flex-col gap-6">
+                      <div className="flex flex-col gap-3">
+                         <p className="text-[10px] font-black text-white uppercase tracking-widest">Vibe-Cloner (Link Style Analysis)</p>
+                         <input 
+                           type="text" 
+                           placeholder="Paste Viral Video Link..."
+                           value={vibeUrl}
+                           onChange={(e) => setVibeUrl(e.target.value)}
+                           className="w-full h-14 bg-white/2 border border-white/5 rounded-2xl px-6 text-[10px] font-black text-white outline-none focus:border-[#a855f733] transition-all"
+                         />
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-6 bg-white/2 rounded-2xl border border-white/5 group hover:border-[#3b82f633] transition-all cursor-pointer" onClick={() => setBrandLocked(!brandLocked)}>
+                         <div className="flex items-center gap-4">
+                            <Shield size={16} className={brandLocked ? 'text-[#3b82f6] drop-shadow-[0_0_8px_#3b82f6]' : 'text-[#404040]'} />
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${brandLocked ? 'text-white' : 'text-[#404040]'}`}>Brand Guard™ Locked</span>
+                         </div>
+                         <div 
+                            className={`w-10 h-5 rounded-full relative transition-all duration-300 ${brandLocked ? 'bg-[#3b82f6]' : 'bg-white/5'}`}
+                         >
+                            <div className={`absolute w-3.5 h-3.5 bg-white rounded-full top-0.75 transition-all duration-300 ${brandLocked ? 'right-0.75' : 'left-0.75'}`} style={{ top: '3px' }} />
+                         </div>
+                      </div>
+                   </div>
+                </div>
                    <div className="flex flex-col gap-6">
                       <div className="grid grid-cols-2 gap-4">
                          <div 
@@ -517,7 +554,9 @@ export default function PrecisionStudio() {
                    </div>
                 </div>
                 </>
-                ) : (
+                ) : null}
+
+                {activeInspectorTab === 'assets' && (
                   <div className="flex flex-col gap-10">
                      <div>
                         <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-8">Asset Categories</p>
@@ -537,6 +576,54 @@ export default function PrecisionStudio() {
                              <div key={ov} className="h-16 px-6 bg-white/2 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-white/20 transition-all cursor-move">
                                 <span className="text-[10px] font-black text-white uppercase tracking-widest">{ov}</span>
                                 <Plus size={14} className="text-[#404040]" />
+                             </div>
+                           ))}
+                        </div>
+                     </div>
+                  </div>
+                )}
+
+                {activeInspectorTab === 'ghostwriter' && (
+                  <div className="flex flex-col gap-10">
+                     <div>
+                        <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-8">AI Metadata Generator</p>
+                        <button 
+                          onClick={() => showToast("Generating SEO Hook...", "info")}
+                          className="w-full h-16 rounded-[24px] bg-[#a855f7] text-white text-[10px] font-black uppercase tracking-widest mb-10 shadow-[0_0_30px_#a855f744]"
+                        >
+                           Scan Video & Write Copy
+                        </button>
+                        <div className="flex flex-col gap-6">
+                           <div className="p-6 bg-white/2 border border-white/5 rounded-2xl">
+                              <p className="text-[9px] font-black text-[#404040] uppercase tracking-widest mb-3">Viral SEO Title</p>
+                              <p className="text-[11px] font-bold text-white leading-relaxed">How I Mastered the Titan-X AI Pipeline (Insane Results) 🚀</p>
+                           </div>
+                           <div className="p-6 bg-white/2 border border-white/5 rounded-2xl">
+                              <p className="text-[9px] font-black text-[#404040] uppercase tracking-widest mb-3">IG/TikTok Caption</p>
+                              <p className="text-[11px] font-bold text-white leading-relaxed">Stop wasting hours on editing. VoxFlow just changed the game. Check the link in bio for early access. #AI #Editing #Viral</p>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                )}
+
+                {activeInspectorTab === 'avatar' && (
+                  <div className="flex flex-col gap-10">
+                     <div>
+                        <p className="text-[10px] font-black text-[#404040] uppercase tracking-[5px] mb-8">Indian Avatar Studio</p>
+                        <div className="grid grid-cols-2 gap-4">
+                           {[
+                             { name: 'Arjun (Delhi)', role: 'Tech Guru' },
+                             { name: 'Priya (Mumbai)', role: 'Lifestyle' },
+                             { name: 'Rohan (Bangalore)', role: 'Business' },
+                             { name: 'Ananya (Kolkata)', role: 'News' }
+                           ].map(av => (
+                             <div key={av.name} className="p-5 bg-white/2 border border-white/5 rounded-2xl flex flex-col gap-2 hover:border-[#10b98133] transition-all cursor-pointer group">
+                                <div className="w-full aspect-square bg-white/5 rounded-xl flex items-center justify-center">
+                                   <Smartphone size={24} className="text-[#404040] group-hover:text-white" />
+                                </div>
+                                <span className="text-[9px] font-black text-white uppercase tracking-widest">{av.name}</span>
+                                <span className="text-[7px] font-black text-[#404040] uppercase tracking-widest">{av.role}</span>
                              </div>
                            ))}
                         </div>
