@@ -26,3 +26,4 @@ torchvision
 onnxruntime-gpu
 scenedetect
 opencv-python
+elevenlabs

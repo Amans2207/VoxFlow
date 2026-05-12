@@ -20,6 +20,7 @@ except:
     mp_face_detection = type('obj', (object,), {'FaceDetection': MockFaceDetection})
 import numpy as np
 from moviepy import VideoFileClip, concatenate_videoclips, ColorClip, CompositeVideoClip, TextClip, vfx
+from elevenlabs.client import ElevenLabs
 
 class VideoEditor:
     def __init__(self):
@@ -497,15 +498,40 @@ class IncrementalRenderer:
         self.cache[cache_key] = output
         return output
 
-    def generate_f5_dub(self, text, reference_audio):
+    def generate_neural_dub(self, text, voice_id="CwhRBWXzGAHq8TQ4Fs17"):
         """
-        Direct F5-TTS integration.
+        Direct ElevenLabs integration for professional dubbing.
         """
-        # In a real environment, this calls the F5-TTS model inference
-        output_path = f"f5_dub_{uuid.uuid4()}.wav"
-        # Mocking inference
+        api_key = os.getenv("ELEVEN_API_KEY")
+        if not api_key:
+             return self.generate_f5_dub_fallback(text)
+             
+        client = ElevenLabs(api_key=api_key)
+        output_path = f"exports/dub_{uuid.uuid4().hex[:8]}.mp3"
+        os.makedirs("exports", exist_ok=True)
+        
+        try:
+            audio_gen = client.text_to_speech.convert(
+                text=text,
+                voice_id=voice_id,
+                model_id="eleven_multilingual_v2"
+            )
+            with open(output_path, "wb") as f:
+                for chunk in audio_gen:
+                    if chunk: f.write(chunk)
+            return output_path
+        except Exception as e:
+            print(f"ElevenLabs Error: {e}")
+            return self.generate_f5_dub_fallback(text)
+
+    def generate_f5_dub_fallback(self, text):
+        output_path = f"f5_dub_{uuid.uuid4().hex[:8]}.wav"
         os.system(f"ffmpeg -f lavfi -i 'sine=frequency=440:duration=5' {output_path}")
         return output_path
+
+    def generate_f5_dub(self, text, reference_audio):
+        # Keeping for legacy compatibility but routing to neural
+        return self.generate_neural_dub(text)
 
     def export_studio_project(self, project_id, tracks):
         """

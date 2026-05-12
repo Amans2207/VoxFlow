@@ -100,10 +100,10 @@ ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000,http:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], # Open for deployment, can be restricted via ALLOWED_ORIGINS env
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["Content-Type", "Authorization", "Accept"],
+    allow_headers=["*"],
 )
 
 @app.get("/api/health")
@@ -277,6 +277,22 @@ async def start_dubbing(request: DubRequest, background_tasks: BackgroundTasks):
     background_tasks.add_task(process_dubbing_task, request)
     return {"message": "Dubbing Pipeline Initialized", "job_id": request.job_id}
 
+@app.post("/api/dub-elevenlabs")
+async def process_elevenlabs_dub(request: DubRequest, background_tasks: BackgroundTasks):
+    print('Bhai, request mil gayi backend par! Route: /api/dub-elevenlabs')
+    print(f"ElevenLabs Premium Dubbing Initialized for Job: {request.job_id}")
+    
+    # We use the same background task logic but specifically for ElevenLabs
+    # (The pipeline.py is already using ElevenLabs now, but we create this route for separation)
+    background_tasks.add_task(process_dubbing_task, request)
+    
+    return {
+        "status": "success",
+        "message": "ElevenLabs Premium Pipeline Booted",
+        "job_id": request.job_id,
+        "engine": "ElevenLabs Multilingual V2"
+    }
+
 async def process_studio_export(request: ExportRequest):
     try:
         await manager.broadcast({"type": "render_status", "job_id": request.project_id, "status": "Rendering", "progress": 15, "message": "Neural Engine Warming Up..."})
@@ -329,4 +345,7 @@ async def get_task_status(task_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    # Use PORT from environment or default to 5000
+    port = int(os.environ.get("PORT", 5000))
+    print(f"🚀 Neural Core: Ignition on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port)

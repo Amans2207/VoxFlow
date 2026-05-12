@@ -13,17 +13,14 @@ import { soundEngine } from "@/utils/SoundEngine";
 import NeuralProgressBar from "@/components/NeuralProgressBar";
 import ExportModal from "@/components/ExportModal";
 
-const API_BASE = "http://127.0.0.1:5000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:5000";
 
 const INTERNAL_VOICES = [
-  { id: 'v1', name: 'Starboy (Deep)', accent: 'American' },
-  { id: 'v2', name: 'Nova (Smooth)', accent: 'British' },
-  { id: 'v3', name: 'Titan (Bold)', accent: 'Australian' },
+  { id: 'pNInz6obpg8n9Y4YvA9S', name: 'Bella (Premium)', accent: 'American' },
+  { id: 'pNInz6obpg8n9Y4YvA9S', name: 'Adam (Premium)', accent: 'American' },
+  { id: 'ErXw9f1vhk9VfHBpL0tR', name: 'Antoni (Premium)', accent: 'American' },
   { id: 'v4', name: 'Aman (Creator)', accent: 'Indian' },
-  { id: 'v5', name: 'Luna (Soft)', accent: 'Canadian' },
-  { id: 'v6', name: 'Rex (Energetic)', accent: 'American' },
-  { id: 'v7', name: 'Sophia (Clear)', accent: 'British' },
-  { id: 'v8', name: 'Marcus (Authoritative)', accent: 'American' },
+  { id: 'v1', name: 'Starboy (Deep)', accent: 'American' },
   { id: 'cloned', name: 'My Cloned Voice', accent: 'Custom' },
 ];
 
@@ -127,8 +124,8 @@ export default function AIStudio() {
     const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
-      const url = `${API_BASE}/api/dub`;
-      console.log('Bhai, request ja rahi hai to:', url);
+      const url = `${API_BASE}/api/dub-elevenlabs`;
+      console.log('Bhai, ElevenLabs request ja rahi hai to:', url);
       console.log('Sending request to Backend...');
       const response = await fetch(url, {
         method: 'POST',
@@ -146,15 +143,17 @@ export default function AIStudio() {
         signal: controller.signal
       });
 
+      console.log(`[ElevenLabs API] Response Status: ${response.status}`);
       clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("[ElevenLabs API] Error Data:", errorData);
         throw new Error(errorData.message || "Processing initialization failed");
       }
 
       const data = await response.json();
-      console.log("[AI Studio] Dubbing Initialized:", data);
+      console.log("[AI Studio] ElevenLabs Dubbing Initialized:", data);
       
       showToast("Neural Pipeline Running in Background", "success");
       

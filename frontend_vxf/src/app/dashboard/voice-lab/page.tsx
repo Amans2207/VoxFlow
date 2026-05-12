@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/Toast';
 import { soundEngine } from '@/utils/SoundEngine';
 
-const BASE_URL = "http://127.0.0.1:5000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:5000";
 
 export default function VoiceLab() {
   const { showToast } = useToast();
