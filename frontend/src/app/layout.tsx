@@ -1,99 +1,47 @@
 import type { Metadata } from "next";
 import { Inter, Sora } from "next/font/google";
 import "./globals.css";
-import Script from "next/script";
-import { SocketProvider } from "@/components/SocketProvider";
-import { JourneyTracker } from "@/components/JourneyTracker";
-import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
-import { ThemeProvider } from "@/context/ThemeContext";
-import ThemeSwitcher from "@/components/ThemeSwitcher";
-import { ToastProvider } from "@/components/Toast";
-import MaintenanceWrapper from "@/components/MaintenanceWrapper";
-import { AIProvider } from "@/context/AIContext";
-import AIProgressWrapper from "@/components/AIProgressWrapper";
-import { UploadProvider } from "@/context/UploadContext";
-import { AuthProvider } from "@/components/AuthProvider";
-import { CreditsProvider } from "@/context/CreditsContext";
+import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import QueryProvider from "@/providers/QueryProvider";
+import { AuthProvider } from "@/components/AuthProvider";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { ToastProvider } from "@/components/Toast";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const sora = Sora({ variable: "--font-sora", subsets: ["latin"], weight: ["400", "700"] });
 
-const sora = Sora({
-  variable: "--font-sora",
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
-});
-
-// STATIC METADATA: No variables allowed here for Turbopack optimization
+// STATIC METADATA
 export const metadata: Metadata = {
-  metadataBase: new URL('https://voxflow.ai'),
-  title: {
-    default: "VoxFlow AI | The Viral Video Production Studio",
-    template: "%s | VoxFlow AI"
-  },
-  description: "Create AI videos in seconds. The world's most powerful AI Video Production Studio. Powered by the Titan-X Neural Engine.",
-  applicationName: "VoxFlow AI",
-  authors: [{ name: "Aman Studio" }],
+  title: "VoxFlow AI | Production Studio",
+  description: "The world's most powerful AI Video Production Studio.",
 };
 
-// STATIC VIEWPORT: Separated from Metadata to stop Next.js warnings
+// STATIC VIEWPORT: Mandatory separate export for Next.js 16
 export const viewport = {
   themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en" className={`${inter.variable} ${sora.variable}`} suppressHydrationWarning>
-      <body style={{ fontFamily: "var(--font-inter), sans-serif" }} suppressHydrationWarning>
+      <body className="bg-black text-white selection:bg-blue-500 selection:text-white" suppressHydrationWarning>
         <QueryProvider>
           <ToastProvider>
             <AuthProvider>
-              <CreditsProvider>
-                <UploadProvider>
-                  <AIProvider>
-                      <ThemeProvider>
-                        <MaintenanceWrapper>
-                          <SocketProvider>
-                            <GlobalErrorBoundary>
-                              <JourneyTracker />
-                              {children}
-                            </GlobalErrorBoundary>
-                          </SocketProvider>
-                        </MaintenanceWrapper>
-                        <ThemeSwitcher />
-                        <AIProgressWrapper />
-                      </ThemeProvider>
-                  </AIProvider>
-                </UploadProvider>
-              </CreditsProvider>
+              <ThemeProvider>
+                <GlobalErrorBoundary>
+                  {children}
+                </GlobalErrorBoundary>
+              </ThemeProvider>
             </AuthProvider>
           </ToastProvider>
         </QueryProvider>
-        <Script
-          id="service-worker-cleaner"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                  for(let registration of registrations) {
-                    registration.unregister();
-                  }
-                });
-              }
-            `,
-          }}
-        />
       </body>
     </html>
   );
