@@ -367,7 +367,6 @@ from routes.studio_routes import studio_bp
 # --- BROADCAST & WATCHDOG (CORE) ---
 @api.post("/api/admin/broadcast")
 async def system_broadcast_core(req: dict):
-    from main import sio
     await sio.emit('system_broadcast', {
         "message": req.get("message", "System Update in Progress"),
         "type": req.get("type", "info"),
@@ -377,7 +376,6 @@ async def system_broadcast_core(req: dict):
 
 @api.post("/api/admin/broadcast/clear")
 async def clear_broadcast():
-    from main import sio
     # Logic to clear active broadcast from Redis/DB (Handled by emitting clear)
     await sio.emit('system_broadcast', {
         "message": None,
@@ -386,20 +384,6 @@ async def clear_broadcast():
     })
     await sio.emit('broadcast_cleared', {"broadcast": True})
     return {"status": "success", "message": "Broadcast cleared"}
-
-@api.get("/api/user/projects")
-async def get_user_projects(email: str = "anonymous"):
-    # Logic to fetch projects from DB for this user
-    mock_data = [
-        {"id": "1", "name": "Neural_Cinematic_V1.mp4", "date": "2h ago"},
-        {"id": "2", "name": "Viral_Short_Orchestration.mp4", "date": "5h ago"},
-        {"id": "3", "name": "Brand_Identity_Master.mp4", "date": "1d ago"},
-    ]
-    return {"status": "success", "projects": [], "data": mock_data}
-
-api.include_router(admin_router)
-api.include_router(autopilot_bp)
-api.include_router(studio_bp)
 
 # Global Instances
 editor = VideoEditor()
@@ -987,6 +971,21 @@ async def process_video_unified(request: Request, background_tasks: BackgroundTa
         return {"status": "success", "job_id": job_id, "message": "Neural Engine Dispatched Successfully"}
     except Exception as e:
         return {"status": "error", "message": f"Neural Engine Failure: {str(e)}"}
+@api.get("/api/user/projects")
+async def get_user_projects(email: str = "anonymous"):
+    # Logic to fetch projects from DB for this user
+    mock_data = [
+        {"id": "1", "name": "Neural_Cinematic_V1.mp4", "date": "2h ago"},
+        {"id": "2", "name": "Viral_Short_Orchestration.mp4", "date": "5h ago"},
+        {"id": "3", "name": "Brand_Identity_Master.mp4", "date": "1d ago"},
+    ]
+    return {"status": "success", "projects": [], "data": mock_data}
+
+# --- ROUTER REGISTRATION (LATENT) ---
+api.include_router(admin_router)
+api.include_router(autopilot_bp)
+api.include_router(studio_bp)
+
 @api.get("/api/task/status/{task_id}")
 async def get_task_status(task_id: str):
     return task_state.get(task_id, {"status": "not_found"})
