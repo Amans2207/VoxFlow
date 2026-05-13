@@ -121,9 +121,12 @@ async def verify_token(request: Request):
     except Exception:
         raise HTTPException(status_code=401, detail="Authentication Shield Active: Invalid Token")
 
+api = FastAPI(title="VoxFlow AI Production Core")
+
 # Rate Limit Exceeded Handler
 @api.exception_handler(RateLimitExceeded)
 async def _rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    from fastapi.responses import JSONResponse
     return JSONResponse(
         status_code=429,
         content={"status": "error", "message": "Neural Throttling: Too many requests. Please wait."}
@@ -135,7 +138,6 @@ EXPORT_DIR = os.path.abspath("exports")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(EXPORT_DIR, exist_ok=True)
 
-api = FastAPI(title="VoxFlow AI Production Core")
 
 # Global Error Masking
 @api.exception_handler(Exception)

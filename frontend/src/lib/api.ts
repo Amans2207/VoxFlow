@@ -1,10 +1,11 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+const API_BASE = "/api"; // Use relative path for Next.js rewrites proxy
 
 /**
- * VoxFlow Neural Bridge (Standardized)
+ * VoxFlow Neural Bridge (Standardized Proxy)
  */
 export async function neuralFetch(endpoint: string, options: RequestInit = {}) {
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+    // If endpoint starts with /, it's relative to our proxy
+    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
     
     const response = await fetch(url, {
         ...options,

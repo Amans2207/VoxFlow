@@ -4,10 +4,18 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/v1/:path*',
-        destination: 'http://127.0.0.1:5001/:path*',
+        source: '/api/:path*',
+        destination: 'http://localhost:5001/api/:path*',
+      },
+      {
+        source: '/exports/:path*',
+        destination: 'http://localhost:5001/exports/:path*',
       },
     ];
+  },
+  experimental: {
+    // Ensuring Turbopack doesn't cache proxy responses
+    serverComponentsExternalPackages: ["@supabase/supabase-js"],
   },
 };
 
