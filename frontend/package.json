@@ -47,5 +47,25 @@
     "tailwindcss": "^4.3.0",
     "typescript": "^5",
     "wait-on": "^9.0.6"
+  },
+  "build": {
+    "appId": "com.voxflow.studio",
+    "productName": "VoxFlow AI Studio",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "public/favicon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
