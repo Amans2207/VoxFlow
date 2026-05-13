@@ -5,7 +5,7 @@ import {
   Zap, Sparkles, Wand2, Activity, Cpu, Play, 
   Plus, Search, Clock, ArrowUpRight, BarChart3,
   Monitor, Video, Share2, Layers, Brain, Layout,
-  X, Send, Mic, Film, CloudLightning, Loader2, ChevronRight, Globe, Calendar, Instagram, User
+  X, Send, Mic, Film, CloudLightning, Loader2, ChevronRight, Globe, Calendar, User
 } from "lucide-react";
 import { executeNeuralTask } from "@/utils/NeuralShield";
 import { useEditorStore } from "@/store/useEditorStore";
@@ -187,7 +187,7 @@ export default function Dashboard() {
              </div>
              <div className="flex flex-col gap-2">
                 <button className="w-full py-4 bg-white/2 border border-white/5 rounded-2xl flex items-center justify-center gap-3 hover:bg-white/5 transition-all">
-                   <Instagram size={16} className="text-pink-500" />
+                   <Share2 size={16} className="text-pink-500" />
                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Schedule Reel</span>
                 </button>
                 <button className="w-full py-4 bg-white/2 border border-white/5 rounded-2xl flex items-center justify-center gap-3 hover:bg-white/5 transition-all">
