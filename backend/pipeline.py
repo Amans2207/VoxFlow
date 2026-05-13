@@ -6,6 +6,12 @@ import subprocess
 from elevenlabs.client import ElevenLabs
 from googletrans import Translator
 from utils.eleven_manager import eleven_manager
+from openai import OpenAI
+import logging
+
+# Configure Neural Logging
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
+logger = logging.getLogger("NeuralCore")
 try:
     from faster_whisper import WhisperModel
     HAS_WHISPER = True
@@ -20,6 +26,7 @@ class DubbingPipeline:
         if self.api_key:
             self.client = ElevenLabs(api_key=self.api_key)
         self.translator = Translator()
+        self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         
         # Load Whisper model if available
         if HAS_WHISPER:
@@ -84,14 +91,25 @@ class DubbingPipeline:
         else:
             transcript_text = "Welcome to VoxFlow AI. This is a high-fidelity neural dubbing demonstration."
 
-        # 3. Translation
-        print(f"Neural Core: Translating to {target_lang}...")
+        # 3. Neural Script Optimization (Optional GPT-4o refinement)
+        logger.info(f"Neural Core: Refining transcript for {target_lang}...")
         try:
-            translation = self.translator.translate(transcript_text, dest=target_lang)
-            translated_text = translation.text
+            res = self.openai_client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": f"Translate and refine the following transcript into natural-sounding {target_lang}. Keep the tone consistent with the original."},
+                    {"role": "user", "content": transcript_text}
+                ]
+            )
+            translated_text = res.choices[0].message.content
         except Exception as e:
-            print(f"Translation Error: {e}")
-            translated_text = transcript_text
+            logger.error(f"OpenAI Refinement Error: {e}")
+            # Fallback to simple translation
+            try:
+                translation = self.translator.translate(transcript_text, dest=target_lang)
+                translated_text = translation.text
+            except:
+                translated_text = transcript_text
 
         # 4. ElevenLabs Voice Synthesis with Key Rotation
         print("Neural Core: Synthesizing Neural Audio (ElevenLabs)...")

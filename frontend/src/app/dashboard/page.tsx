@@ -13,6 +13,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import apiClient from "@/utils/apiClient";
 import { useUserStore } from "@/store/useUserStore";
+import CreditsModal from "@/components/CreditsModal";
+import { soundEngine } from "@/utils/SoundEngine";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -26,6 +28,7 @@ export default function Dashboard() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiCommand, setAiCommand] = useState("");
   const [recentProjects, setRecentProjects] = useState<any[]>([]);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -112,7 +115,13 @@ export default function Dashboard() {
         </div>
 
         {/* FUEL STATUS BAR */}
-        <div className="shrink-0 bg-[#0A0A0B] border border-[#00e5ff33] px-6 py-4 rounded-3xl flex items-center gap-4 shadow-[0_0_20px_rgba(0,229,255,0.05)]">
+        <div 
+          onClick={() => {
+            setShowCreditsModal(true);
+            soundEngine?.play("click");
+          }}
+          className="shrink-0 bg-[#0A0A0B] border border-[#00e5ff33] px-6 py-4 rounded-3xl flex items-center gap-4 shadow-[0_0_20px_rgba(0,229,255,0.05)] hover:border-[#00e5ff] cursor-pointer transition-all group"
+        >
            <div className="flex flex-col items-end">
               <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[2px]">Engine Fuel</span>
               <span className="text-xl font-black text-white">{creditBalance.toFixed(1)} <span className="text-[#00e5ff] text-[10px] tracking-widest">CR</span></span>
@@ -120,8 +129,13 @@ export default function Dashboard() {
            <div className="w-1.5 h-8 bg-[#00e5ff22] rounded-full overflow-hidden">
               <div className="w-full bg-[#00e5ff] animate-pulse" style={{ height: `${Math.min(100, (creditBalance/1000)*100)}%` }}></div>
            </div>
+           <div className="ml-2 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-zinc-500 group-hover:text-white transition-all">
+              <Plus size={16} />
+           </div>
         </div>
       </div>
+
+      <CreditsModal isOpen={showCreditsModal} onClose={() => setShowCreditsModal(false)} />
       
       {/* MAGIC BOX MODAL */}
       {showMagicBox && (
