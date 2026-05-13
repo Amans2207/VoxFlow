@@ -8,7 +8,7 @@ import type { MiddlewareConfig } from 'next/server';
  * NEURAL PROXY v16 (MASTER MIDDLEWARE)
  * Unified entry point for Auth, Session, and Shielding.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // 1. Supabase Session Persistence
   const supabaseResponse = await updateSession(request);
   const { pathname } = request.nextUrl;
