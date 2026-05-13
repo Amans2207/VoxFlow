@@ -1156,10 +1156,11 @@ async def claim_daily_bonus(req: dict):
 
 @api.post("/api/process_video", dependencies=[Depends(verify_token)])
 @limiter.limit("3/minute")
-async def process_video_route(req: dict, background_tasks: BackgroundTasks):
+async def process_video_route(request: Request, background_tasks: BackgroundTasks):
     from services.video_engine import generate_video_ffmpeg
     import hashlib
     
+    req = await request.json()
     email = req.get("email", "anonymous")
     audio_path = req.get("audio_path", "uploads/default_audio.mp3")
     image_path = req.get("image_path", "uploads/default_image.jpg")
