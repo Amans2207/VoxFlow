@@ -12,7 +12,8 @@ const handler = NextAuth({
     async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
         try {
-          const syncUrl = `http://localhost:5001/api/register`;
+          const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+          const syncUrl = `${apiBase}/api/register`;
           console.log(`[NextAuth] Syncing profile with Neural Core: ${syncUrl}`);
           
           const res = await fetch(syncUrl, {

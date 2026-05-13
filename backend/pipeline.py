@@ -28,6 +28,8 @@ class DubbingPipeline:
             self.client = ElevenLabs(api_key=self.api_key)
         self.translator = Translator()
         self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.output_dir = os.path.abspath("exports")
+        os.makedirs(self.output_dir, exist_ok=True)
         
         # Load Whisper model if available
         if HAS_WHISPER:
@@ -164,36 +166,22 @@ class DubbingPipeline:
             try:
                 subprocess.run(["ffmpeg", "-i", local_input, "-vn", "-acodec", "libmp3lame", dub_audio_path, "-y"], capture_output=True)
             except:
-                # If extraction fails, generate silence
                 subprocess.run(["ffmpeg", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "2", dub_audio_path, "-y"], capture_output=True)
 
-        # 5. Final Assembly
-        output_video = os.path.join(output_dir, f"dub_{job_id}.mp4")
-        print(f"Neural Core: Finalizing Dubbed Master ({'DUBBED' if has_dub else 'FALLBACK'})...")
-        
+        # 5. Export Asset
+        output_video = os.path.join(self.output_dir, f"dub_{job_id}.mp4")
         try:
-            # Assembly with Visual Proof Overlay
-            status_text = f"NEURAL DUBBED: {target_lang.upper()}" if has_dub else f"NEURAL SYNC: {target_lang.upper()} (AUDIO FALLBACK)"
-            cmd = [
+            subprocess.run([
                 "ffmpeg", "-i", local_input, "-i", dub_audio_path,
-                "-filter_complex", f"[0:v]drawtext=text='{status_text}':x=(w-tw)/2:y=h-100:fontsize=48:fontcolor=cyan:box=1:boxcolor=black@0.7:boxborderw=10[v]",
-                "-map", "[v]", "-map", "1:a",
+                "-map", "0:v", "-map", "1:a",
                 "-c:v", "libx264", "-c:a", "aac", "-b:a", "192k",
                 output_video, "-y"
-            ]
-            subprocess.run(cmd, capture_output=True)
+            ], capture_output=True)
         except Exception as e:
             print(f"Assembly Error: {e}")
             shutil.copy(local_input, output_video)
-        
-        if os.path.exists(dub_audio_path):
-            os.remove(dub_audio_path)
-
-        license_file = os.path.join(output_dir, f"license_{job_id}.txt")
-        with open(license_file, "w") as f:
-            f.write(f"Neural Dubbing Certificate\nTarget: {target_lang}\nID: {job_id}\nEngine: ElevenLabs")
             
-        return output_video, license_file
+        return output_video, None
 
     def apply_viral_captions(self, video_path, transcript_segments):
         """
