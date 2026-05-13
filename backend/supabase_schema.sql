@@ -6,12 +6,12 @@ ALTER TABLE public.profiles
 ADD COLUMN IF NOT EXISTS credit_balance DECIMAL DEFAULT 10.0;
 
 -- 2. Create the Atomic Credit Decrement Function
-CREATE OR REPLACE FUNCTION decrement_credits(target_email TEXT, amount DECIMAL)
+CREATE OR REPLACE FUNCTION decrement_credits(target_user_id UUID, amount DECIMAL DEFAULT 1.0)
 RETURNS void AS $$
 BEGIN
   UPDATE public.profiles
   SET credit_balance = credit_balance - amount
-  WHERE email = target_email AND credit_balance >= amount;
+  WHERE id = target_user_id AND credit_balance >= amount;
   
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Neural Balance Insufficient or Profile Not Found';

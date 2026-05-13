@@ -91,22 +91,35 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col gap-12 p-2 min-h-screen pb-20">
       
-      {/* AI COMMAND BAR */}
-      <div className="w-full bg-[#0A0A0B] border border-white/10 rounded-3xl p-4 flex items-center gap-4 shadow-3xl group focus-within:border-[#00e5ff33] transition-all">
-        <div className="w-10 h-10 bg-[#00e5ff22] rounded-full flex items-center justify-center text-[#00e5ff] shadow-[0_0_15px_rgba(0,229,255,0.2)]">
-          <Zap size={20} className="group-focus-within:animate-pulse" />
+      {/* AI COMMAND BAR & FUEL STATUS */}
+      <div className="flex flex-col md:flex-row items-center gap-6">
+        <div className="flex-1 w-full bg-[#0A0A0B] border border-white/10 rounded-3xl p-4 flex items-center gap-4 shadow-3xl group focus-within:border-[#00e5ff33] transition-all">
+          <div className="w-10 h-10 bg-[#00e5ff22] rounded-full flex items-center justify-center text-[#00e5ff] shadow-[0_0_15px_rgba(0,229,255,0.2)]">
+            <Zap size={20} className="group-focus-within:animate-pulse" />
+          </div>
+          <input 
+            type="text" 
+            value={aiCommand}
+            onChange={(e) => setAiCommand(e.target.value)}
+            onKeyDown={handleAiCommand}
+            placeholder="Command the Titan-X Engine... (e.g. 'Build a 30s TikTok about Crypto trends')" 
+            className="flex-1 bg-transparent border-none text-white focus:outline-none placeholder:text-zinc-600 font-bold text-sm tracking-wide"
+          />
+          <div className="flex items-center gap-2 pr-4">
+             <span className="hidden md:block px-3 py-1 bg-white/5 rounded-lg text-[8px] font-black text-zinc-500 uppercase tracking-widest border border-white/5">Auto-Detect ON</span>
+             <button onClick={() => handleAiCommand({ key: 'Enter' } as any)} className="px-6 py-2 bg-[#00e5ff] text-black text-[10px] font-black uppercase rounded-xl hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,229,255,0.2)]">Run Command</button>
+          </div>
         </div>
-        <input 
-          type="text" 
-          value={aiCommand}
-          onChange={(e) => setAiCommand(e.target.value)}
-          onKeyDown={handleAiCommand}
-          placeholder="Command the Titan-X Engine... (e.g. 'Build a 30s TikTok about Crypto trends')" 
-          className="flex-1 bg-transparent border-none text-white focus:outline-none placeholder:text-zinc-600 font-bold text-sm tracking-wide"
-        />
-        <div className="flex items-center gap-2 pr-4">
-           <span className="hidden md:block px-3 py-1 bg-white/5 rounded-lg text-[8px] font-black text-zinc-500 uppercase tracking-widest border border-white/5">Auto-Detect ON</span>
-           <button onClick={() => handleAiCommand({ key: 'Enter' } as any)} className="px-6 py-2 bg-[#00e5ff] text-black text-[10px] font-black uppercase rounded-xl hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,229,255,0.2)]">Run Command</button>
+
+        {/* FUEL STATUS BAR */}
+        <div className="shrink-0 bg-[#0A0A0B] border border-[#00e5ff33] px-6 py-4 rounded-3xl flex items-center gap-4 shadow-[0_0_20px_rgba(0,229,255,0.05)]">
+           <div className="flex flex-col items-end">
+              <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[2px]">Engine Fuel</span>
+              <span className="text-xl font-black text-white">{creditBalance.toFixed(1)} <span className="text-[#00e5ff] text-[10px] tracking-widest">CR</span></span>
+           </div>
+           <div className="w-1.5 h-8 bg-[#00e5ff22] rounded-full overflow-hidden">
+              <div className="w-full bg-[#00e5ff] animate-pulse" style={{ height: `${Math.min(100, (creditBalance/1000)*100)}%` }}></div>
+           </div>
         </div>
       </div>
       
