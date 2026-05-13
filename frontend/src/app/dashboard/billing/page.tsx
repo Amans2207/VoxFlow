@@ -10,7 +10,7 @@ import { useToast } from '@/components/Toast';
 import { soundEngine } from '@/utils/SoundEngine';
 import { createClient } from '@/utils/supabase/client';
 
-const AI_SERVICE_URL = "http://localhost:5001";
+const AI_SERVICE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function BillingPage() {
   const { showToast } = useToast();

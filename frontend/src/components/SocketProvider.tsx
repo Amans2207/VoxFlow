@@ -15,7 +15,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const [activeSocket, setActiveSocket] = React.useState<Socket | null>(null);
 
   useEffect(() => {
-    const API_BASE = "http://localhost:5001";
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
     const socket = io(API_BASE);
     setActiveSocket(socket);
 

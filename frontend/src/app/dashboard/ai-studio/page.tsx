@@ -130,18 +130,10 @@ export default function AIStudio() {
         user_email: session?.user?.email || useUserStore.getState().user?.email || "anonymous"
       };
       
-      const response = await fetch(`${API_BASE}/api/synthesis`, {
+      return await safeFetch('/api/synthesis', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || "Neural Synthesis Failed");
-      }
-
-      return await response.json();
     };
 
     const data = await executeNeuralTask(

@@ -965,6 +965,6 @@ async def get_task_status(task_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 5001))
     print(f"Neural Core: Ignition on port {port} with Socket.io Support")
     uvicorn.run(app, host="0.0.0.0", port=port)

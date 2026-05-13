@@ -23,7 +23,7 @@ export default function NeuralProgressBar({ taskId, onComplete, progress: manual
     if (!taskId) return;
 
     // Connect to Server-Sent Events (SSE)
-    const AI_SERVICE_URL = "http://localhost:5001";
+    const AI_SERVICE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
     const eventSource = new EventSource(`${AI_SERVICE_URL}/api/autopilot/progress/${taskId}`);
 
     eventSource.onmessage = (event) => {

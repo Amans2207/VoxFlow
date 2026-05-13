@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:5001"; // Unified Titan-X Bridge
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"; // Unified Titan-X Bridge
 
 /**
  * Neural Core: Robust Fetch with Global Error Intercept

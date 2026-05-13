@@ -19,6 +19,9 @@ export default function AdminDashboard() {
   const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
   const [ledger, setLedger] = useState<any[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [vipEmail, setVipEmail] = useState("");
+  const [vipName, setVipName] = useState("");
+  const [isInjecting, setIsInjecting] = useState(false);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -50,11 +53,25 @@ export default function AdminDashboard() {
     }, 1500);
   };
 
-  const handleApproveTransaction = (id: string, utr: string) => {
+  const handleApproveTransaction = async (id: string, utr: string, userId: string, amount: number, email: string, name: string) => {
     console.log(`[Admin Hub] Approving Transaction ID: ${id} | UTR: ${utr}`);
-    setPendingTransactions(prev => prev.filter(t => t.id !== id));
-    showToast(`Approved Transaction ${utr}`, "success");
-    soundEngine?.play("success");
+    try {
+      await safeFetch('/api/admin/approve-payment', {
+        method: 'POST',
+        body: JSON.stringify({
+          transactionId: id,
+          userId: userId,
+          amount: amount,
+          userName: name,
+          userEmail: email
+        })
+      });
+      setPendingTransactions(prev => prev.filter(t => t.id !== id));
+      showToast(`Approved Transaction ${utr}`, "success");
+      soundEngine?.play("success");
+    } catch (e) {
+      showToast("Approval Failed", "error");
+    }
   };
 
   const handleRejectTransaction = (id: string, utr: string) => {
@@ -64,10 +81,32 @@ export default function AdminDashboard() {
     soundEngine?.play("click");
   };
 
-  const handleInjectVip = () => {
+  const handleInjectVip = async () => {
+    if (!vipEmail || !vipName) {
+      showToast("Please fill all VIP fields", "error");
+      return;
+    }
     console.log(`[Admin Hub] Injecting ${vipCredits} credits into VIP account...`);
+    setIsInjecting(true);
     soundEngine?.play("processing");
-    showToast(`Injected ${vipCredits} Credits`, "success");
+    try {
+      await safeFetch('/api/admin/create-vip', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: vipEmail,
+          fullName: vipName,
+          password: "temporary_vip_pass", // In real app, user would set this
+          initialCredits: vipCredits
+        })
+      });
+      showToast(`Injected ${vipCredits} Credits into ${vipEmail}`, "success");
+      setVipEmail("");
+      setVipName("");
+    } catch (e) {
+      showToast("Injection Failed", "error");
+    } finally {
+      setIsInjecting(false);
+    }
   };
 
   if (loading) return (
@@ -149,8 +188,20 @@ export default function AdminDashboard() {
                 <Users className="text-[#10b981]" size={24} /> VIP Access
              </h3>
              <div className="flex flex-col gap-6">
-                <input type="text" placeholder="FULL NAME" className="h-14 px-6 bg-white/2 border border-white/5 rounded-2xl text-white text-[11px] font-black uppercase tracking-widest outline-none focus:border-white/10" />
-                <input type="email" placeholder="CREATOR EMAIL" className="h-14 px-6 bg-white/2 border border-white/5 rounded-2xl text-white text-[11px] font-black uppercase tracking-widest outline-none focus:border-white/10" />
+                <input 
+                  type="text" 
+                  placeholder="FULL NAME" 
+                  value={vipName}
+                  onChange={(e) => setVipName(e.target.value)}
+                  className="h-14 px-6 bg-white/2 border border-white/5 rounded-2xl text-white text-[11px] font-black uppercase tracking-widest outline-none focus:border-white/10" 
+                />
+                <input 
+                  type="email" 
+                  placeholder="CREATOR EMAIL" 
+                  value={vipEmail}
+                  onChange={(e) => setVipEmail(e.target.value)}
+                  className="h-14 px-6 bg-white/2 border border-white/5 rounded-2xl text-white text-[11px] font-black uppercase tracking-widest outline-none focus:border-white/10" 
+                />
                 <div className="flex flex-col gap-3">
                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
                       <span className="text-[#404040]">CREDITS</span>
@@ -168,9 +219,10 @@ export default function AdminDashboard() {
                 </div>
                 <button 
                   onClick={handleInjectVip}
-                  className="h-14 mt-4 bg-[#10b981] text-black font-black rounded-2xl text-[11px] uppercase tracking-[2px] border-none shadow-xl active:scale-95 transition-all cursor-pointer"
+                  disabled={isInjecting}
+                  className="h-14 mt-4 bg-[#10b981] text-black font-black rounded-2xl text-[11px] uppercase tracking-[2px] border-none shadow-xl active:scale-95 transition-all cursor-pointer disabled:opacity-50"
                 >
-                  Inject Access
+                  {isInjecting ? "Processing..." : "Inject Access"}
                 </button>
              </div>
           </div>
@@ -196,7 +248,7 @@ export default function AdminDashboard() {
                      </div>
                      <div className="flex items-center gap-4 w-full md:w-auto border-t md:border-none border-white/5 pt-4 md:pt-0">
                         <button 
-                          onClick={() => handleApproveTransaction(t.id, t.utr)}
+                          onClick={() => handleApproveTransaction(t.id, t.utr, t.user_id, t.amount, t.user_email || 'test@test.com', t.user_name || 'Test User')}
                           className="h-14 flex-1 md:w-14 md:h-14 bg-[#10b981] rounded-2xl flex items-center justify-center border-none shadow-xl active:scale-90 transition-all cursor-pointer"
                         >
                            <CheckCircle2 size={24} className="text-black" />

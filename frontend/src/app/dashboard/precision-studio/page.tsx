@@ -84,8 +84,12 @@ export default function PrecisionStudio() {
   };
 
   const handleNeuralCaptions = async () => {
+    if (!selectedClip) {
+      toast.error("Please select a clip first");
+      return;
+    }
     const task = async () => {
-      return await apiClient.post('/api/audio/caption', { video_url: 'mock_url' });
+      return await apiClient.post('/api/audio/caption', { video_url: selectedClip.url });
     };
 
     await executeNeuralTask(
@@ -96,8 +100,12 @@ export default function PrecisionStudio() {
   };
 
   const handleNeuralSFX = async () => {
+    if (!selectedClip) {
+      toast.error("Please select a clip first");
+      return;
+    }
     const task = async () => {
-       return await apiClient.post('/api/audio/enhance', { video_url: 'mock_url' });
+       return await apiClient.post('/api/audio/enhance', { video_url: selectedClip.url });
     };
     await executeNeuralTask(
        task,
@@ -107,10 +115,14 @@ export default function PrecisionStudio() {
   };
 
   const handleStartDubbing = async () => {
+    if (!selectedClip) {
+      toast.error("Please select a clip first");
+      return;
+    }
     const task = async () => {
        const userStore = (await import("@/store/useUserStore")).useUserStore.getState();
        return await apiClient.post('/api/dub', { 
-         video_url: 'mock_url', 
+         video_url: selectedClip.url, 
          target_lang: 'Hindi',
          user_email: userStore.user?.email || "anonymous"
        });
@@ -380,7 +392,7 @@ export default function PrecisionStudio() {
                               const task = async () => {
                                  await apiClient.post('/api/media/extract', { 
                                     clip_id: selectedClip.id, 
-                                    video_url: 'mock',
+                                    video_url: selectedClip.url, 
                                     email: useUserStore.getState().user?.email 
                                  });
                                  useEditorStore.getState().extractAudioFromClip(selectedClip.id);

@@ -16,7 +16,7 @@ export default function AdminPayments() {
   }, []);
 
   const fetchPending = async () => {
-    const apiUrl = "http://localhost:5001";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
     try {
       const res = await fetch(`${apiUrl}/api/admin/payments/pending`);
       const data = await res.json();
@@ -29,7 +29,7 @@ export default function AdminPayments() {
   };
 
   const handleResolve = async (id: string, action: 'approve' | 'reject', credits: number) => {
-    const apiUrl = "http://localhost:5001";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
     showToast(`Neural ${action} in progress...`, "info");
     try {
       const res = await fetch(`${apiUrl}/api/admin/payments/resolve`, {
