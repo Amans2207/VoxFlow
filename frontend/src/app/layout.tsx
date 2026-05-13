@@ -6,6 +6,7 @@ import QueryProvider from "@/providers/QueryProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/Toast";
+import { CreditsProvider } from "@/context/CreditsContext";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const sora = Sora({ variable: "--font-sora", subsets: ["latin"], weight: ["400", "700"] });
@@ -35,9 +36,11 @@ export default function RootLayout({
           <ToastProvider>
             <AuthProvider>
               <ThemeProvider>
-                <GlobalErrorBoundary>
-                  {children}
-                </GlobalErrorBoundary>
+                <CreditsProvider>
+                  <GlobalErrorBoundary>
+                    {children}
+                  </GlobalErrorBoundary>
+                </CreditsProvider>
               </ThemeProvider>
             </AuthProvider>
           </ToastProvider>

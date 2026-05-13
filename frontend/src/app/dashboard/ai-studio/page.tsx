@@ -310,7 +310,7 @@ export default function AIStudio() {
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-8"
               >
-                <NeuralProgressBar taskId={activeJobId} progress={isProcessing ? undefined : 100} />
+                <NeuralProgressBar taskId={jobId} progress={isProcessing ? undefined : 100} />
               </motion.div>
            )}
         </div>
