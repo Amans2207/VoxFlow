@@ -34,21 +34,22 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // 2. Sync from Supabase & get user tier
     const syncFromSupabase = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (user) {
+      if (session?.user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("credit_balance, role")
-          .eq("id", user.id)
+          .select("credit_balance, role, plan_tier, selected_theme_id")
+          .eq("email", session.user.email)
           .single();
 
         if (profile) {
-          setUserTier(profile.plan_tier || "Lite");
-          if (profile.selected_theme_id && profile.selected_theme_id !== savedTheme) {
-            setCurrentTheme(profile.selected_theme_id as Theme);
-            document.documentElement.setAttribute("data-theme", profile.selected_theme_id);
-            localStorage.setItem("vxf_theme", profile.selected_theme_id);
+          const profileData = profile as any;
+          setUserTier(profileData.plan_tier || "Lite");
+          if (profileData.selected_theme_id && profileData.selected_theme_id !== savedTheme) {
+            setCurrentTheme(profileData.selected_theme_id as Theme);
+            document.documentElement.setAttribute("data-theme", profileData.selected_theme_id);
+            localStorage.setItem("vxf_theme", profileData.selected_theme_id);
           }
         }
       }

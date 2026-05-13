@@ -7,6 +7,7 @@ import {
   Monitor, Video, Share2, Layers, Brain, Layout,
   X, Send, Mic, Film, CloudLightning, Loader2, ChevronRight
 } from "lucide-react";
+import { executeNeuralTask } from "@/utils/NeuralShield";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   CreditCard, Zap, QrCode, Upload, CheckCircle2, 
   ShieldCheck, AlertCircle, Sparkles, 
-  ArrowRight, Lock, Wallet, History, IndianRupee, Loader2
+  ArrowRight, Lock, Wallet, History, IndianRupee, Loader2, Tag
 } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import { soundEngine } from '@/utils/SoundEngine';

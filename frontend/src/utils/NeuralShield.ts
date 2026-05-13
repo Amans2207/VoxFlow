@@ -21,7 +21,7 @@ export async function executeNeuralTask<T>(
   let isBackground = false;
   const bgTimeout = allowBackground ? setTimeout(() => {
     isBackground = true;
-    toast.info("Neural Task: Processing in Background... You can continue working.", { id: toastId, icon: '🔄' });
+    toast("Neural Task: Processing in Background... You can continue working.", { id: toastId, icon: '🚀' });
   }, 8000) : null;
 
   let attempts = 0;

@@ -10,7 +10,9 @@ import {
   TrendingUp, BarChart3, Radio, MessageSquare, Share2, Music2, GitBranch,
   Smile, User2, ZapOff, Fingerprint, Box, Clock, X, Smartphone, Mic
 } from "lucide-react";
+import { useUserStore } from "@/store/useUserStore";
 import { useEditorStore } from "@/store/useEditorStore";
+import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import apiClient from "@/utils/apiClient";
 
