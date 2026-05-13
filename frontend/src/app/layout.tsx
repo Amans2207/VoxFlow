@@ -18,23 +18,39 @@ const sora = Sora({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://voxflow.ai'),
-  title: "VoxFlow AI - Next-Gen Video Engine",
-  description: "The world's most powerful AI Video Production Studio. Transform content with Titan-X Neural Dubbing, Precision Studio, and Generative AI.",
-  keywords: ["AI Video Editor", "Automated Dubbing", "Viral Content Creator", "VoxFlow", "Aman Studio"],
+  title: {
+    default: "VoxFlow AI | The Neural Video Production Suite",
+    template: "%s | VoxFlow AI"
+  },
+  description: "Experience the future of video production with Titan-X Neural Dubbing, Generative AI, and Precision Editing. Orchestrate viral content with AI precision.",
+  applicationName: "VoxFlow AI",
+  authors: [{ name: "Aman Studio" }],
+  generator: "Next.js",
+  keywords: ["AI Video Editor", "Neural Dubbing", "Titan-X Engine", "Automated Video Production", "Aman Studio", "VoxFlow"],
+  referrer: "origin-when-cross-origin",
+  themeColor: "#000000",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
   openGraph: {
     title: "VoxFlow AI | Next-Gen Video Production",
-    description: "The future of video creation is here. Powered by the Titan-X Neural Engine.",
-    images: ["/og-image.png"],
+    description: "The world's most powerful AI Video Production Studio. Powered by the Titan-X Neural Engine.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
     url: 'https://voxflow.ai',
+    siteName: "VoxFlow AI",
+    locale: "en_US",
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: "VoxFlow AI - Next-Gen Video Engine",
+    title: "VoxFlow AI | Next-Gen Video Engine",
     description: "Orchestrate viral content with AI precision.",
+    creator: "@voxflow_ai",
     images: ["/twitter-image.png"],
   },
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  }
 };
 
 import { ThemeProvider } from "@/context/ThemeContext";
@@ -66,16 +82,18 @@ export default function RootLayout({
               <CreditsProvider>
                 <UploadProvider>
                   <AIProvider>
-                    <ThemeProvider>
-                      <MaintenanceWrapper>
-                        <SocketProvider>
-                          <JourneyTracker />
-                          {children}
-                        </SocketProvider>
-                      </MaintenanceWrapper>
-                      <ThemeSwitcher />
-                      <AIProgressWrapper />
-                    </ThemeProvider>
+                      <ThemeProvider>
+                        <MaintenanceWrapper>
+                          <SocketProvider>
+                            <GlobalErrorBoundary>
+                              <JourneyTracker />
+                              {children}
+                            </GlobalErrorBoundary>
+                          </SocketProvider>
+                        </MaintenanceWrapper>
+                        <ThemeSwitcher />
+                        <AIProgressWrapper />
+                      </ThemeProvider>
                   </AIProvider>
                 </UploadProvider>
               </CreditsProvider>

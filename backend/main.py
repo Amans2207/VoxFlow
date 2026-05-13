@@ -51,6 +51,46 @@ def retry_with_backoff(max_retries=3, initial_delay=1):
         return wrapper
     return decorator
 
+def log_system_event(event_type: str, message: str, metadata: dict = None):
+    """
+    Neural Link: Logs critical system events to Supabase for remote debugging.
+    """
+    try:
+        if supabase:
+            supabase.table("system_logs").insert({
+                "event_type": event_type,
+                "message": message,
+                "metadata": metadata or {},
+                "created_at": datetime.datetime.utcnow().isoformat()
+            }).execute()
+    except Exception as e:
+        print(f"[Logger] Failed to sync log: {e}")
+
+async def ai_fallback_call(primary_fn, secondary_fn, *args, **kwargs):
+    """
+    Neural Core: Fallback Engine. 
+    Attempts primary service, fails over to secondary on error.
+    """
+    try:
+        return await primary_fn(*args, **kwargs)
+    except Exception as e:
+        log_system_event("FAILOVER_TRIGGERED", f"Primary Failed: {str(e)}", {"fn": str(primary_fn)})
+        print(f"[Fallback] Primary Failed. Switching to Secondary Neural Node...")
+        return await secondary_fn(*args, **kwargs)
+
+# Global Neural Cache (Performance Optimization)
+neural_cache = {} # { input_hash: result_data }
+
+def generate_signed_url(filename: str, expiry_hours: int = 24):
+    """
+    Neural Link: Generates a temporary access token for a specific export.
+    """
+    payload = {
+        "file": filename,
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=expiry_hours)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
 # Global Task Queue for Background Processing
 task_state = {} 
 
@@ -180,11 +220,37 @@ api.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 api.mount("/exports", StaticFiles(directory="exports"), name="exports")
 
 @api.get("/exports/{filename}")
-async def serve_exports(filename: str):
+async def serve_exports(filename: str, token: str = None):
+    """
+    Neural Vault: Access control for generated assets.
+    Requires a valid signature token.
+    """
+    if not token:
+        raise HTTPException(status_code=403, detail="Neural Access Denied: Missing Signature")
+    
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        if payload.get("file") != filename:
+            raise HTTPException(status_code=403, detail="Neural Integrity Failure: Token mismatch")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=403, detail="Neural Access Expired: Links valid for 24h")
+    except Exception:
+        raise HTTPException(status_code=403, detail="Neural Access Denied: Invalid Signature")
+
     file_path = os.path.join(EXPORT_DIR, filename)
     if os.path.exists(file_path):
         return FileResponse(file_path)
     return {"detail": "Asset Not Found in Neural Vault"}
+
+@api.post("/api/webhooks/neural")
+async def neural_webhook_listener(request: Request):
+    """
+    Neural Gateway: Receives status updates from external AI APIs or Payment Gateways.
+    """
+    payload = await request.json()
+    print(f"[Webhook] Received Neural Signal: {payload.get('status')}")
+    # Logic to update task state or credit balance
+    return {"status": "signal_received"}
 
 # --- PRODUCTION HARDENING ---
 IS_PROD = os.getenv("ENV") == "production"
@@ -290,16 +356,21 @@ class RegisterRequest(BaseModel):
 # Global System State
 maintenance_mode = False
 
-@api.get("/")
-async def home():
-    return {"status": "VoxFlow API Active", "version": "1.0.0"}
-
 @api.get("/api/health")
 async def health_check():
+    # Database Health
+    db_status = "online"
+    try:
+        supabase.table("profiles").select("count", count="exact").limit(1).execute()
+    except Exception:
+        db_status = "degraded"
+
     return {
-        "status": "ok", 
-        "maintenance": maintenance_mode,
-        "engine": "Titan-X Neural Core v4.2"
+        "status": "VoxFlow API Active",
+        "version": "1.0.0",
+        "neural_link": "online",
+        "database": db_status,
+        "cache_size": len(neural_cache)
     }
 
 @api.get("/api/admin/maintenance")
@@ -1022,31 +1093,76 @@ async def admin_update_credits(req: dict):
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
 
+@api.post("/api/user/daily_bonus")
+async def claim_daily_bonus(req: dict):
+    """
+    Retention Engine: Grants +2 credits for daily logins.
+    """
+    email = req.get("email")
+    if not email: return JSONResponse(status_code=400, content={"message": "Missing email"})
+    
+    try:
+        user = supabase.table("profiles").select("last_login_bonus", "credit_balance").eq("email", email).single().execute()
+        if user.data:
+            last_bonus = user.data.get("last_login_bonus")
+            now = datetime.datetime.utcnow()
+            
+            if not last_bonus or (now - datetime.datetime.fromisoformat(last_bonus)).days >= 1:
+                new_balance = float(user.data["credit_balance"]) + 2.0
+                supabase.table("profiles").update({
+                    "credit_balance": new_balance,
+                    "last_login_bonus": now.isoformat()
+                }).eq("email", email).execute()
+                
+                log_system_event("DAILY_BONUS_GRANTED", f"+2 Credits to {email}")
+                return {"status": "success", "message": "Daily Bonus +2 Credits Granted!", "new_balance": new_balance}
+            
+            return {"status": "error", "message": "Bonus already claimed for today."}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": str(e)})
+
 @api.post("/api/process_video", dependencies=[Depends(verify_token)])
 @limiter.limit("3/minute")
 async def process_video_route(req: dict, background_tasks: BackgroundTasks):
     from services.video_engine import generate_video_ffmpeg
+    import hashlib
     
     email = req.get("email", "anonymous")
     audio_path = req.get("audio_path", "uploads/default_audio.mp3")
     image_path = req.get("image_path", "uploads/default_image.jpg")
     
+    # PERFORMANCE CACHE CHECK
+    cache_key = hashlib.md5(f"{audio_path}{image_path}".encode()).hexdigest()
+    if cache_key in neural_cache:
+        print(f"[Cache] Neural Hit! Serving cached result for {cache_key}")
+        return neural_cache[cache_key]
+
     # 1. Credit Check (5 Credits)
     if not deduct_credits_sync(email, 5.0):
         return JSONResponse(status_code=402, content={"status": "error", "message": "Insufficient Balance"})
 
     # 2. Dispatch Render
     job_id = f"gen_{uuid.uuid4().hex[:8]}"
-    output_path = f"exports/{job_id}.mp4"
+    filename = f"{job_id}.mp4"
+    output_path = f"exports/{filename}"
     
     background_tasks.add_task(generate_video_ffmpeg, audio_path, image_path, output_path)
     
-    return {
+    # 3. Log Job Creation
+    log_system_event("VIDEO_GEN_STARTED", f"Job {job_id} for {email}", {"email": email, "job_id": job_id})
+    
+    # 4. Generate Signed URL for Result
+    token = generate_signed_url(filename)
+    result = {
         "status": "success", 
         "job_id": job_id,
         "message": "Render Dispatched",
-        "video_url": f"/exports/{job_id}.mp4"
+        "video_url": f"/exports/{filename}?token={token}"
     }
+    
+    # Update Cache
+    neural_cache[cache_key] = result
+    return result
 
 # --- ROUTER REGISTRATION (LATENT) ---
 api.include_router(admin_router)

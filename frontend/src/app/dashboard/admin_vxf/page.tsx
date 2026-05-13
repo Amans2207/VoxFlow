@@ -21,10 +21,9 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [vipEmail, setVipEmail] = useState("");
   const [vipName, setVipName] = useState("");
-  const [isInjecting, setIsInjecting] = useState(false);
-  const [vipEmail, setVipEmail] = useState("");
-  const [vipName, setVipName] = useState("");
-  const [isInjecting, setIsInjecting] = useState(false);
+   const [isInjecting, setIsInjecting] = useState(false);
+   const [systemHealth, setSystemHealth] = useState<any>({ database: 'offline', neural_link: 'offline' });
+
 
   useEffect(() => {
     const fetchAdminData = async () => {
@@ -38,6 +37,10 @@ export default function AdminDashboard() {
           // Fetch Maintenance Status
           const maint = await safeFetch('/api/admin/maintenance');
           setIsMaintenance(maint.active);
+
+          // Fetch System Health
+          const health = await safeFetch('/api/health');
+          setSystemHealth(health);
 
           // Fetch Pending Transactions
           setPendingTransactions([
@@ -259,9 +262,10 @@ export default function AdminDashboard() {
               </h3>
               <div className="flex flex-col gap-6">
                  {[
-                   { label: 'H100 CLUSTER', val: '24%', color: '#3b82f6' },
-                   { label: 'VRAM UTILIZATION', val: '68%', color: '#a855f7' },
-                   { label: 'API THROUGHPUT', val: '14.2 GB/S', color: '#10b981' }
+                   { label: 'NEURAL LINK', val: systemHealth.neural_link?.toUpperCase(), color: systemHealth.neural_link === 'online' ? '#10b981' : '#ef4444' },
+                   { label: 'DATABASE', val: systemHealth.database?.toUpperCase(), color: systemHealth.database === 'online' ? '#10b981' : '#ef4444' },
+                   { label: 'CACHE SIZE', val: `${systemHealth.cache_size} ENTRIES`, color: '#3b82f6' },
+                   { label: 'VRAM UTILIZATION', val: '68%', color: '#a855f7' }
                  ].map(stat => (
                    <div key={stat.label} className="flex justify-between items-center border-b border-white/5 pb-4 last:border-none">
                       <span className="text-[10px] font-black text-[#404040] uppercase tracking-widest">{stat.label}</span>
