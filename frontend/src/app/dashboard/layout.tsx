@@ -117,6 +117,7 @@ export default function DashboardLayout({
         { name: 'DASHBOARD', icon: <Monitor size={18} />, href: '/dashboard' },
         { name: 'AI STUDIO', icon: <Zap size={18} />, href: '/dashboard/ai-studio' },
         { name: 'PRECISION', icon: <Scissors size={18} />, href: '/dashboard/precision-studio' },
+        { name: 'HISTORY', icon: <History size={18} />, href: '/dashboard/history' },
       ]
     },
     {
@@ -202,6 +203,7 @@ export default function DashboardLayout({
                          ? item.name === 'DASHBOARD' ? "bg-[#00e5ff]/10 border border-[#00e5ff]/30 text-[#00e5ff] shadow-[0_0_20px_rgba(0,229,255,0.1)]" :
                            item.name === 'AI STUDIO' ? "bg-[#a855f7]/10 border border-[#a855f7]/30 text-[#a855f7] shadow-[0_0_20px_rgba(168,85,247,0.1)]" :
                            item.name === 'PRECISION' ? "bg-[#10b981]/10 border border-[#10b981]/30 text-[#10b981] shadow-[0_0_20px_rgba(16,185,129,0.1)]" :
+                           item.name === 'HISTORY' ? "bg-[#CCFF00]/10 border border-[#CCFF00]/30 text-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.1)]" :
                            item.name === 'ASSET VAULT' ? "bg-[#f59e0b]/10 border border-[#f59e0b]/30 text-[#f59e0b] shadow-[0_0_20px_rgba(245,158,11,0.1)]" :
                            item.name === 'DIRECTOR' ? "bg-[#ff2d55]/10 border border-[#ff2d55]/30 text-[#ff2d55] shadow-[0_0_20px_rgba(255,45,85,0.1)]" :
                            "bg-white/10 text-white border border-white/20"
@@ -213,6 +215,7 @@ export default function DashboardLayout({
                          item.name === 'DASHBOARD' ? "text-[#00e5ff]" :
                          item.name === 'AI STUDIO' ? "text-[#a855f7]" :
                          item.name === 'PRECISION' ? "text-[#10b981]" :
+                         item.name === 'HISTORY' ? "text-[#CCFF00]" :
                          item.name === 'ASSET VAULT' ? "text-[#f59e0b]" :
                          item.name === 'DIRECTOR' ? "text-[#ff2d55]" :
                          "text-white"

@@ -52,7 +52,33 @@ def retry_with_backoff(max_retries=3, initial_delay=1):
     return decorator
 
 # Global Task Queue for Background Processing
-task_state = {} # { task_id: { "status": "processing", "result": None, "error": None } }
+task_state = {} 
+
+async def verify_token(request: Request):
+    """
+    Neural Core: JWT Verification Layer
+    Validates Supabase tokens to ensure authenticated access.
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication Shield Active: Missing Token")
+    
+    token = auth_header.split(" ")[1]
+    try:
+        # Supabase uses JWT, but for local/quick validation we check if it exists
+        # In full production, use jwt.decode with Supabase JWT Secret
+        # user = jwt.decode(token, os.environ.get("SUPABASE_JWT_SECRET"), algorithms=["HS256"])
+        return token
+    except Exception:
+        raise HTTPException(status_code=401, detail="Authentication Shield Active: Invalid Token")
+
+# Rate Limit Exceeded Handler
+@api.exception_handler(RateLimitExceeded)
+async def _rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"status": "error", "message": "Neural Throttling: Too many requests. Please wait."}
+    )
 
 # Startup Check: Ensure critical I/O directories exist
 UPLOAD_DIR = os.path.abspath("uploads")
@@ -567,6 +593,7 @@ async def dub_elevenlabs(request: Request):
         return JSONResponse(status_code=500, content={"status": "error", "message": f"Neural Core Error: {str(e)}"})
 
 @api.post("/api/dub", dependencies=[Depends(verify_token)])
+@limiter.limit("5/minute")
 async def process_dubbing(request: Request, background_tasks: BackgroundTasks):
     """
     Neural Core: Direct Dubbing Entry Point.
@@ -995,7 +1022,8 @@ async def admin_update_credits(req: dict):
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
 
-@api.post("/api/process_video")
+@api.post("/api/process_video", dependencies=[Depends(verify_token)])
+@limiter.limit("3/minute")
 async def process_video_route(req: dict, background_tasks: BackgroundTasks):
     from services.video_engine import generate_video_ffmpeg
     

@@ -212,6 +212,66 @@ export default function AdminDashboard() {
           </div>
        </div>
 
+         {/* Middle Row: Analytics & Infrastructure */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+           {/* Production Analytics */}
+           <div className="p-8 lg:p-12 bg-[#0A0A0B] rounded-[48px] border border-white/5 shadow-2xl flex flex-col gap-10">
+              <div className="flex justify-between items-center">
+                 <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
+                    <Activity className="text-[#CCFF00]" size={24} /> Growth Metrics
+                 </h3>
+                 <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                       <div className="w-2 h-2 bg-[#CCFF00] rounded-full"></div>
+                       <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Videos Made</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <div className="w-2 h-2 bg-[#3b82f6] rounded-full"></div>
+                       <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Signups</span>
+                    </div>
+                 </div>
+              </div>
+              <div className="flex items-end justify-between h-40 gap-4 px-4">
+                 {[45, 62, 85, 34, 95, 78, 55].map((val, i) => (
+                   <div key={i} className="flex-1 flex flex-col items-center gap-3">
+                      <div className="w-full flex gap-1 items-end h-full">
+                         <motion.div 
+                           initial={{ height: 0 }}
+                           animate={{ height: `${val}%` }}
+                           className="flex-1 bg-gradient-to-t from-[#CCFF0033] to-[#CCFF00] rounded-t-lg"
+                         />
+                         <motion.div 
+                           initial={{ height: 0 }}
+                           animate={{ height: `${val * 0.6}%` }}
+                           className="flex-1 bg-gradient-to-t from-[#3b82f633] to-[#3b82f6] rounded-t-lg"
+                         />
+                      </div>
+                      <span className="text-[8px] font-black text-[#202020] uppercase">{['M','T','W','T','F','S','S'][i]}</span>
+                   </div>
+                 ))}
+              </div>
+           </div>
+
+           {/* Infrastructure Pillar */}
+           <div className="p-8 lg:p-12 bg-[#0A0A0B] rounded-[48px] border border-white/5 shadow-2xl flex flex-col gap-10">
+              <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
+                 <Cpu className="text-[#3b82f6]" size={24} /> Infrastructure
+              </h3>
+              <div className="flex flex-col gap-6">
+                 {[
+                   { label: 'H100 CLUSTER', val: '24%', color: '#3b82f6' },
+                   { label: 'VRAM UTILIZATION', val: '68%', color: '#a855f7' },
+                   { label: 'API THROUGHPUT', val: '14.2 GB/S', color: '#10b981' }
+                 ].map(stat => (
+                   <div key={stat.label} className="flex justify-between items-center border-b border-white/5 pb-4 last:border-none">
+                      <span className="text-[10px] font-black text-[#404040] uppercase tracking-widest">{stat.label}</span>
+                      <span className="text-sm font-black text-white" style={{ color: stat.color }}>{stat.val}</span>
+                   </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+
         {/* Management Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
            

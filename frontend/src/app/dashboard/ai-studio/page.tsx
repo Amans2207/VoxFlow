@@ -255,6 +255,18 @@ export default function AIStudio() {
                  <p className="text-[11px] text-[#404040] font-bold uppercase leading-relaxed">Localized lip-sync for 29+ international dialects.</p>
               </div>
            </div>
+
+           {/* NEURAL PROGRESS HUD */}
+           {isProcessing && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-8"
+              >
+                <NeuralProgressBar taskId={activeJobId} progress={isProcessing ? undefined : 100} />
+              </motion.div>
+           )}
+        </div>
         </div>
 
         {/* Right: Configuration Sidebar */}
