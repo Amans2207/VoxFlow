@@ -85,6 +85,18 @@ CREATE POLICY "Users can update own profile"
 ON public.profiles FOR UPDATE 
 USING (auth.uid() = id);
 
+-- 8. SOCIAL SCHEDULER: SCHEDULED POSTS
+CREATE TABLE IF NOT EXISTS public.scheduled_posts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE,
+    platform TEXT CHECK (platform IN ('Instagram', 'TikTok', 'YouTube', 'X')),
+    scheduled_at TIMESTAMPTZ NOT NULL,
+    status TEXT DEFAULT 'Pending' CHECK (status IN ('Pending', 'Posted', 'Failed')),
+    caption TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ==========================================
--- SYSTEM SYNC COMPLETE 🚀
+-- MISSION COMPLETE: SYSTEM STABILIZED 🚀
 -- ==========================================

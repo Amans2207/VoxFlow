@@ -7,6 +7,7 @@ from elevenlabs.client import ElevenLabs
 from googletrans import Translator
 from utils.eleven_manager import eleven_manager
 from openai import OpenAI
+from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
 import logging
 
 # Configure Neural Logging
@@ -193,6 +194,40 @@ class DubbingPipeline:
             f.write(f"Neural Dubbing Certificate\nTarget: {target_lang}\nID: {job_id}\nEngine: ElevenLabs")
             
         return output_video, license_file
+
+    def apply_viral_captions(self, video_path, transcript_segments):
+        """
+        VIRAL CAPTIONS: Overlays high-contrast text using MoviePy.
+        Instagram/Hormozi Style.
+        """
+        logger.info(f"Neural Core: Applying Viral Captions to {video_path}...")
+        try:
+            video = VideoFileClip(video_path)
+            clips = [video]
+            
+            for seg in transcript_segments:
+                # Create a high-contrast text clip
+                txt = TextClip(
+                    seg['text'].upper(), 
+                    fontsize=70, 
+                    color='yellow', 
+                    font='Arial-Bold',
+                    stroke_color='black',
+                    stroke_width=2,
+                    method='caption',
+                    size=(video.w * 0.8, None)
+                ).set_start(seg['start']).set_duration(seg['end'] - seg['start']).set_position(('center', video.h * 0.8))
+                
+                clips.append(txt)
+            
+            final_video = CompositeVideoClip(clips)
+            output_path = video_path.replace(".mp4", "_captions.mp4")
+            final_video.write_videofile(output_path, codec="libx264", audio_codec="aac")
+            
+            return output_path
+        except Exception as e:
+            logger.error(f"Caption Rendering Error: {e}")
+            return video_path
 
 def get_pipeline():
     return DubbingPipeline()

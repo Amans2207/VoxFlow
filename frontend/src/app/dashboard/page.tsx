@@ -5,7 +5,7 @@ import {
   Zap, Sparkles, Wand2, Activity, Cpu, Play, 
   Plus, Search, Clock, ArrowUpRight, BarChart3,
   Monitor, Video, Share2, Layers, Brain, Layout,
-  X, Send, Mic, Film, CloudLightning, Loader2, ChevronRight
+  X, Send, Mic, Film, CloudLightning, Loader2, ChevronRight, Globe, Calendar, Instagram, User
 } from "lucide-react";
 import { executeNeuralTask } from "@/utils/NeuralShield";
 import { useEditorStore } from "@/store/useEditorStore";
@@ -29,6 +29,8 @@ export default function Dashboard() {
   const [aiCommand, setAiCommand] = useState("");
   const [recentProjects, setRecentProjects] = useState<any[]>([]);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
+  const [selectedLang, setSelectedLang] = useState("Hindi");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -137,7 +139,64 @@ export default function Dashboard() {
 
       <CreditsModal isOpen={showCreditsModal} onClose={() => setShowCreditsModal(false)} />
       
-      {/* MAGIC BOX MODAL */}
+      {/* VIRAL SUITE CONTROLS */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* AVATAR UPLOAD */}
+          <div className="bg-[#0A0A0B] border border-white/5 p-6 rounded-[32px] flex flex-col gap-4 group hover:border-[#00e5ff33] transition-all">
+             <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Neural Avatar</span>
+                <User size={16} className="text-zinc-600 group-hover:text-[#00e5ff]" />
+             </div>
+             <div className="flex-1 border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center p-6 hover:bg-white/2 cursor-pointer transition-all relative overflow-hidden">
+                {avatarUrl ? (
+                  <img src={avatarUrl} className="absolute inset-0 w-full h-full object-cover opacity-50" />
+                ) : (
+                  <>
+                    <Upload size={24} className="text-zinc-700 mb-2" />
+                    <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[2px]">Drop AI Face</span>
+                  </>
+                )}
+                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
+                  if (e.target.files?.[0]) setAvatarUrl(URL.createObjectURL(e.target.files[0]));
+                }} />
+             </div>
+          </div>
+
+          {/* LANGUAGE SELECTOR */}
+          <div className="bg-[#0A0A0B] border border-white/5 p-6 rounded-[32px] flex flex-col gap-4 group hover:border-[#00e5ff33] transition-all">
+             <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Target Language</span>
+                <Globe size={16} className="text-zinc-600 group-hover:text-[#00e5ff]" />
+             </div>
+             <select 
+               value={selectedLang}
+               onChange={(e) => setSelectedLang(e.target.value)}
+               className="flex-1 bg-white/2 border border-white/5 rounded-2xl px-6 font-black text-sm text-white focus:outline-none appearance-none cursor-pointer hover:border-white/10"
+             >
+                {["Hindi", "English", "Spanish", "Marathi", "Bengali", "Spanish", "Japanese"].map(l => (
+                  <option key={l} value={l} className="bg-[#0A0A0B]">{l}</option>
+                ))}
+             </select>
+          </div>
+
+          {/* SOCIAL SCHEDULER */}
+          <div className="bg-[#0A0A0B] border border-white/5 p-6 rounded-[32px] flex flex-col gap-4 group hover:border-[#00e5ff33] transition-all">
+             <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Platform Sync</span>
+                <Calendar size={16} className="text-zinc-600 group-hover:text-[#00e5ff]" />
+             </div>
+             <div className="flex flex-col gap-2">
+                <button className="w-full py-4 bg-white/2 border border-white/5 rounded-2xl flex items-center justify-center gap-3 hover:bg-white/5 transition-all">
+                   <Instagram size={16} className="text-pink-500" />
+                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Schedule Reel</span>
+                </button>
+                <button className="w-full py-4 bg-white/2 border border-white/5 rounded-2xl flex items-center justify-center gap-3 hover:bg-white/5 transition-all">
+                   <Clock size={16} className="text-[#00e5ff]" />
+                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Auto-Post ON</span>
+                </button>
+             </div>
+          </div>
+      </div>
       {showMagicBox && (
         <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-3xl flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
            <div className="w-full max-w-3xl bg-[#0A0A0B] border border-white/10 rounded-[48px] shadow-3xl overflow-hidden flex flex-col relative">

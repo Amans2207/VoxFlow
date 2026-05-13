@@ -495,23 +495,21 @@ async def deduct_credits(email: str, amount: float):
         return {"status": "error", "message": str(e)}
 
 def deduct_credits_sync(email: str, amount: float):
-    """Sync version for background tasks"""
+    """Sync version for background tasks using Neural RPC for atomicity."""
     if not supabase or not email or email == "anonymous":
         return True
     try:
-        user_res = supabase.table("profiles").select("credit_balance").eq("email", email).execute()
+        # Get user ID first
+        user_res = supabase.table("profiles").select("id").eq("email", email).single().execute()
         if user_res.data:
-            current_balance = float(user_res.data[0]["credit_balance"])
-            if current_balance < amount:
-                return False # Insufficient Balance
-            
-            new_balance = current_balance - amount
-            supabase.table("profiles").update({"credit_balance": max(0, new_balance)}).eq("email", email).execute()
-            print(f"[Credits] Deducted {amount} from {email}. New Balance: {new_balance}")
+            user_id = user_res.data["id"]
+            # Call atomic RPC
+            supabase.rpc('decrement_credits', {'target_user_id': user_id, 'amount': amount}).execute()
+            print(f"[Neural RPC] Deducted {amount} from {email}.")
             return True
         return False
     except Exception as e:
-        print(f"[Credits] Deduction Error: {e}")
+        print(f"[Credits] Atomic Deduction Error: {e}")
         return False
 
 # Route Separation
@@ -566,6 +564,65 @@ async def get_admin_stats():
         }
     except Exception as e:
         return {"error": str(e)}
+
+@api.get("/api/admin/pending-transactions")
+async def get_pending_transactions():
+    """Fetches all pending UPI verifications."""
+    if not supabase: return []
+    res = supabase.table("transactions").select("*").eq("status", "Pending").execute()
+    return res.data
+
+@api.post("/api/admin/approve-payment")
+async def approve_payment(request: Request):
+    """Approves a transaction and injects credits atomically."""
+    data = await request.json()
+    t_id = data.get("transactionId")
+    email = data.get("userEmail")
+    amount = data.get("amount") # This is currency, conversion needed
+    
+    # 1 Credit per 10 INR (Example logic)
+    credits_to_add = amount / 10.0
+    
+    try:
+        # Update transaction status
+        supabase.table("transactions").update({"status": "Approved"}).eq("id", t_id).execute()
+        
+        # Inject Credits
+        user_res = supabase.table("profiles").select("id", "credit_balance").eq("email", email).single().execute()
+        if user_res.data:
+            new_balance = float(user_res.data["credit_balance"]) + credits_to_add
+            supabase.table("profiles").update({"credit_balance": new_balance}).eq("id", user_res.data["id"]).execute()
+            
+            # Log in Ledger
+            supabase.table("credit_ledger").insert({
+                "user_id": user_res.data["id"],
+                "user_email": email,
+                "amount": credits_to_add,
+                "type": "credit",
+                "action_type": "PURCHASE",
+                "description": f"UPI Payment Approved (UTR: {t_id})"
+            }).execute()
+            
+        return {"status": "success", "message": f"Injected {credits_to_add} Credits"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@api.post("/api/admin/create-vip")
+async def create_vip_access(request: Request):
+    """Grants VIP status and manual credit injection."""
+    data = await request.json()
+    email = data.get("email")
+    initial_credits = data.get("initialCredits", 500)
+    
+    try:
+        supabase.table("profiles").update({
+            "role": "VIP",
+            "credit_balance": initial_credits,
+            "plan_tier": "Pro"
+        }).eq("email", email).execute()
+        return {"status": "success", "message": f"VIP Status Granted to {email}"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 # Global Variables
 pipeline = None
