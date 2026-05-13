@@ -8,7 +8,7 @@ import {
   Zap, Monitor, Scissors, Mic, ShoppingBag, CreditCard, Settings, 
   Power, User, Bell, Video, Layers, Sparkles, Wand2, LogOut, Wallet,
   Activity, Cpu, Box, Search, Share2, Image as ImageIcon, Music, Film,
-  Type, ChevronRight, Smartphone, Command, X
+  Type, ChevronRight, Smartphone, Command, X, Shield, History
 } from "lucide-react";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useUserStore } from "@/store/useUserStore";
