@@ -13,10 +13,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  experimental: {
-    // Ensuring Turbopack doesn't cache proxy responses
-    serverComponentsExternalPackages: ["@supabase/supabase-js"],
-  },
+  serverExternalPackages: ["@supabase/supabase-js"],
 };
 
 export default nextConfig;
