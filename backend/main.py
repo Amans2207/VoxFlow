@@ -261,9 +261,34 @@ class RegisterRequest(BaseModel):
     name: str = ""
     image: str = ""
 
+# Global System State
+maintenance_mode = False
+
+@api.get("/")
+async def home():
+    return {"status": "VoxFlow API Active", "version": "1.0.0"}
+
 @api.get("/api/health")
 async def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok", 
+        "maintenance": maintenance_mode,
+        "engine": "Titan-X Neural Core v4.2"
+    }
+
+@api.get("/api/admin/maintenance")
+async def get_maintenance():
+    return {"active": maintenance_mode}
+
+@api.post("/api/admin/maintenance/toggle")
+async def toggle_maintenance(req: dict):
+    global maintenance_mode
+    maintenance_mode = req.get("active", not maintenance_mode)
+    await sio.emit('system_broadcast', {
+        "message": "MAINTENANCE MODE: SYSTEM SHIELD ACTIVE" if maintenance_mode else "SYSTEM ONLINE: ALL ENGINES GO",
+        "type": "alert" if maintenance_mode else "success"
+    })
+    return {"status": "success", "active": maintenance_mode}
 
 @api.post("/api/register")
 @api.post("/api/auth/google")
@@ -322,15 +347,22 @@ async def deduct_credits(email: str, amount: float):
 def deduct_credits_sync(email: str, amount: float):
     """Sync version for background tasks"""
     if not supabase or not email or email == "anonymous":
-        return
+        return True
     try:
         user_res = supabase.table("profiles").select("credit_balance").eq("email", email).execute()
         if user_res.data:
-            new_balance = float(user_res.data[0]["credit_balance"]) - amount
+            current_balance = float(user_res.data[0]["credit_balance"])
+            if current_balance < amount:
+                return False # Insufficient Balance
+            
+            new_balance = current_balance - amount
             supabase.table("profiles").update({"credit_balance": max(0, new_balance)}).eq("email", email).execute()
             print(f"[Credits] Deducted {amount} from {email}. New Balance: {new_balance}")
+            return True
+        return False
     except Exception as e:
         print(f"[Credits] Deduction Error: {e}")
+        return False
 
 # Route Separation
 from routes.admin_routes import router as admin_router
@@ -946,13 +978,47 @@ async def process_video_unified(request: Request, background_tasks: BackgroundTa
         return {"status": "error", "message": f"Neural Engine Failure: {str(e)}"}
 @api.get("/api/user/projects")
 async def get_user_projects(email: str = "anonymous"):
-    # Logic to fetch projects from DB for this user
-    mock_data = [
-        {"id": "1", "name": "Neural_Cinematic_V1.mp4", "date": "2h ago"},
-        {"id": "2", "name": "Viral_Short_Orchestration.mp4", "date": "5h ago"},
-        {"id": "3", "name": "Brand_Identity_Master.mp4", "date": "1d ago"},
-    ]
-    return {"status": "success", "projects": [], "data": mock_data}
+    return {"status": "success", "projects": []}
+
+@api.post("/api/admin/credits/update")
+async def admin_update_credits(req: dict):
+    """Admin God-Mode: Manually override credit balance"""
+    email = req.get("email")
+    new_amount = req.get("amount")
+    
+    if not email or new_amount is None:
+        return JSONResponse(status_code=400, content={"message": "Missing email or amount"})
+        
+    try:
+        supabase.table("profiles").update({"credit_balance": new_amount}).eq("email", email).execute()
+        return {"status": "success", "message": f"Updated {email} to {new_amount} credits"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": str(e)})
+
+@api.post("/api/process_video")
+async def process_video_route(req: dict, background_tasks: BackgroundTasks):
+    from services.video_engine import generate_video_ffmpeg
+    
+    email = req.get("email", "anonymous")
+    audio_path = req.get("audio_path", "uploads/default_audio.mp3")
+    image_path = req.get("image_path", "uploads/default_image.jpg")
+    
+    # 1. Credit Check (5 Credits)
+    if not deduct_credits_sync(email, 5.0):
+        return JSONResponse(status_code=402, content={"status": "error", "message": "Insufficient Balance"})
+
+    # 2. Dispatch Render
+    job_id = f"gen_{uuid.uuid4().hex[:8]}"
+    output_path = f"exports/{job_id}.mp4"
+    
+    background_tasks.add_task(generate_video_ffmpeg, audio_path, image_path, output_path)
+    
+    return {
+        "status": "success", 
+        "job_id": job_id,
+        "message": "Render Dispatched",
+        "video_url": f"/exports/{job_id}.mp4"
+    }
 
 # --- ROUTER REGISTRATION (LATENT) ---
 api.include_router(admin_router)

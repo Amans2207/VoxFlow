@@ -16,31 +16,61 @@ export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [vipCredits, setVipCredits] = useState(500);
-  const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
-  const [ledger, setLedger] = useState<any[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isMaintenance, setIsMaintenance] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [vipEmail, setVipEmail] = useState("");
+  const [vipName, setVipName] = useState("");
+  const [isInjecting, setIsInjecting] = useState(false);
   const [vipEmail, setVipEmail] = useState("");
   const [vipName, setVipName] = useState("");
   const [isInjecting, setIsInjecting] = useState(false);
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    const fetchAdminData = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         if (profile?.role === 'Admin' || user.email === 'admin@voxflow.ai') {
           setIsAdmin(true);
+          
+          // Fetch Maintenance Status
+          const maint = await safeFetch('/api/admin/maintenance');
+          setIsMaintenance(maint.active);
+
+          // Fetch Pending Transactions
           setPendingTransactions([
-            { id: '1', amount: 999, utr: '876608312901', user_id: 'User_442' },
-            { id: '2', amount: 2499, utr: 'UTR_88229911', user_id: 'User_901' }
+            { id: '1', amount: 999, utr: '876608312901', user_id: 'User_442', user_email: 'test@user.com', user_name: 'Test User' },
+            { id: '2', amount: 2499, utr: 'UTR_88229911', user_id: 'User_901', user_email: 'creator@vfx.io', user_name: 'Creator' }
+          ]);
+
+          // Fetch Users (Mock for now)
+          setUsers([
+            { id: '1', email: 'aman@voxflow.ai', credits: 500, role: 'Admin' },
+            { id: '2', email: 'user@test.com', credits: 45, role: 'Free' }
           ]);
         }
       }
       setLoading(false);
     };
-    checkAdmin();
+    fetchAdminData();
   }, []);
+
+  const handleToggleMaintenance = async () => {
+    const newState = !isMaintenance;
+    try {
+      await safeFetch('/api/admin/maintenance/toggle', {
+        method: 'POST',
+        body: JSON.stringify({ active: newState })
+      });
+      setIsMaintenance(newState);
+      showToast(newState ? "Maintenance Activated" : "System Restored", newState ? "error" : "success");
+      soundEngine?.play(newState ? "alert" : "success");
+    } catch (e) {
+      showToast("Sync Failed", "error");
+    }
+  };
 
   const handleRefreshQueue = () => {
     console.log("[Admin Hub] Refreshing Verification Queue...");
@@ -137,13 +167,16 @@ export default function AdminDashboard() {
              </p>
           </div>
           <div className="w-full md:w-auto flex flex-col md:flex-row gap-4">
+             <button 
+               onClick={handleToggleMaintenance}
+               className={`h-16 px-8 rounded-2xl border flex items-center gap-4 transition-all ${isMaintenance ? 'bg-[#ef4444] border-[#ef4444] text-white' : 'bg-white/3 border-white/5 text-[#404040] hover:text-white'}`}
+             >
+                <Shield size={20} />
+                <span className="text-[10px] font-black uppercase tracking-widest">{isMaintenance ? "Maintenance ACTIVE" : "Toggle Maintenance"}</span>
+             </button>
              <div className="bg-white/3 p-4 md:p-5 rounded-2xl border border-white/5 text-right">
                 <p className="text-[9px] font-black text-[#404040] uppercase tracking-widest">Neural Engine</p>
                 <p className="text-lg font-black text-[#10b981] uppercase">OPTIMIZED</p>
-             </div>
-             <div className="bg-white/3 p-4 md:p-5 rounded-2xl border border-white/5 text-right">
-                <p className="text-[9px] font-black text-[#404040] uppercase tracking-widest">GPU Cluster</p>
-                <p className="text-lg font-black text-[#3b82f6] uppercase">LOAD: 24%</p>
              </div>
           </div>
        </header>
@@ -179,98 +212,118 @@ export default function AdminDashboard() {
           </div>
        </div>
 
-       {/* Management Row */}
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
-          
-          {/* VIP Generator */}
-          <div className="p-8 lg:p-12 bg-[#0A0A0B] rounded-[48px] border border-white/5 shadow-2xl flex flex-col gap-10">
-             <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
-                <Users className="text-[#10b981]" size={24} /> VIP Access
-             </h3>
-             <div className="flex flex-col gap-6">
-                <input 
-                  type="text" 
-                  placeholder="FULL NAME" 
-                  value={vipName}
-                  onChange={(e) => setVipName(e.target.value)}
-                  className="h-14 px-6 bg-white/2 border border-white/5 rounded-2xl text-white text-[11px] font-black uppercase tracking-widest outline-none focus:border-white/10" 
-                />
-                <input 
-                  type="email" 
-                  placeholder="CREATOR EMAIL" 
-                  value={vipEmail}
-                  onChange={(e) => setVipEmail(e.target.value)}
-                  className="h-14 px-6 bg-white/2 border border-white/5 rounded-2xl text-white text-[11px] font-black uppercase tracking-widest outline-none focus:border-white/10" 
-                />
-                <div className="flex flex-col gap-3">
-                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                      <span className="text-[#404040]">CREDITS</span>
-                      <span className="text-[#10b981]">{vipCredits} MINS</span>
+        {/* Management Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
+           
+           {/* User Management */}
+           <div className="p-8 lg:p-12 bg-[#0A0A0B] rounded-[48px] border border-white/5 shadow-2xl flex flex-col gap-10">
+              <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
+                 <Users className="text-[#3b82f6]" size={24} /> Neural Users
+              </h3>
+              <div className="flex flex-col gap-4 overflow-y-auto max-h-[300px] no-scrollbar">
+                 {users.map(u => (
+                   <div key={u.id} className="p-5 bg-white/2 border border-white/5 rounded-2xl flex justify-between items-center">
+                      <div className="flex flex-col">
+                         <span className="text-[10px] font-black text-white uppercase tracking-tight">{u.email}</span>
+                         <span className="text-[8px] font-bold text-zinc-600 uppercase">{u.credits} Credits</span>
+                      </div>
+                      <div className="flex gap-2">
+                         <button className="p-2 bg-white/5 rounded-lg text-zinc-600 hover:text-white"><AlertTriangle size={14} /></button>
+                         <button className="p-2 bg-white/5 rounded-lg text-zinc-600 hover:text-white"><CreditCard size={14} /></button>
+                      </div>
                    </div>
-                   <input 
-                    type="range" 
-                    min="100" 
-                    max="2000" 
-                    step="100" 
-                    value={vipCredits} 
-                    onChange={(e) => setVipCredits(parseInt(e.target.value))} 
-                    className="w-full h-2 bg-white/5 rounded-full appearance-none cursor-pointer accent-[#10b981]" 
-                   />
-                </div>
-                <button 
-                  onClick={handleInjectVip}
-                  disabled={isInjecting}
-                  className="h-14 mt-4 bg-[#10b981] text-black font-black rounded-2xl text-[11px] uppercase tracking-[2px] border-none shadow-xl active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {isInjecting ? "Processing..." : "Inject Access"}
-                </button>
-             </div>
-          </div>
+                 ))}
+              </div>
+           </div>
 
-          {/* Pending Queue */}
-          <div className="lg:col-span-2 p-8 lg:p-12 bg-[#0A0A0B] rounded-[48px] border border-white/5 shadow-2xl flex flex-col gap-10">
-             <div className="flex justify-between items-center">
-                <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
-                   <Database className="text-[#3b82f6]" size={24} /> Verification Queue
-                </h3>
-                <RefreshCw 
-                  onClick={handleRefreshQueue}
-                  className={`text-[#404040] cursor-pointer hover:text-white transition-all ${isRefreshing ? 'animate-spin' : ''}`} 
-                  size={20} 
-                />
-             </div>
-             <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar max-h-[400px]">
-                {pendingTransactions.map(t => (
-                  <div key={t.id} className="p-6 bg-white/2 border border-white/5 rounded-[32px] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 hover:border-white/10 transition-all">
-                     <div>
-                        <p className="text-lg lg:text-xl font-black text-white tracking-tighter">INR {t.amount} Top-Up</p>
-                        <p className="text-[9px] font-black text-[#404040] uppercase tracking-widest mt-1">UTR: {t.utr} | UID: {t.user_id}</p>
-                     </div>
-                     <div className="flex items-center gap-4 w-full md:w-auto border-t md:border-none border-white/5 pt-4 md:pt-0">
-                        <button 
-                          onClick={() => handleApproveTransaction(t.id, t.utr, t.user_id, t.amount, t.user_email || 'test@test.com', t.user_name || 'Test User')}
-                          className="h-14 flex-1 md:w-14 md:h-14 bg-[#10b981] rounded-2xl flex items-center justify-center border-none shadow-xl active:scale-90 transition-all cursor-pointer"
-                        >
-                           <CheckCircle2 size={24} className="text-black" />
-                        </button>
-                        <button 
-                          onClick={() => handleRejectTransaction(t.id, t.utr)}
-                          className="h-14 flex-1 md:w-14 md:h-14 bg-[#ef44441a] border border-[#ef444433] rounded-2xl flex items-center justify-center active:scale-90 transition-all cursor-pointer"
-                        >
-                           <XCircle size={24} className="text-[#ef4444]" />
-                        </button>
-                     </div>
-                  </div>
-                ))}
-                {pendingTransactions.length === 0 && (
-                  <div className="text-center py-20 border-2 border-dashed border-white/5 rounded-[40px]">
-                     <ShieldCheck className="mx-auto text-[#404040] mb-4" size={48} />
-                     <p className="text-[10px] font-black text-[#404040] uppercase tracking-widest">Queue Fully Verified</p>
-                  </div>
-                )}
-             </div>
-          </div>
-       </div>
+           {/* VIP Generator */}
+           <div className="p-8 lg:p-12 bg-[#0A0A0B] rounded-[48px] border border-white/5 shadow-2xl flex flex-col gap-10">
+              <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
+                 <Zap className="text-[#10b981]" size={24} /> VIP Injector
+              </h3>
+              <div className="flex flex-col gap-6">
+                 <input 
+                   type="text" 
+                   placeholder="FULL NAME" 
+                   value={vipName}
+                   onChange={(e) => setVipName(e.target.value)}
+                   className="h-14 px-6 bg-white/2 border border-white/5 rounded-2xl text-white text-[11px] font-black uppercase tracking-widest outline-none focus:border-white/10" 
+                 />
+                 <input 
+                   type="email" 
+                   placeholder="CREATOR EMAIL" 
+                   value={vipEmail}
+                   onChange={(e) => setVipEmail(e.target.value)}
+                   className="h-14 px-6 bg-white/2 border border-white/5 rounded-2xl text-white text-[11px] font-black uppercase tracking-widest outline-none focus:border-white/10" 
+                 />
+                 <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                       <span className="text-[#404040]">CREDITS</span>
+                       <span className="text-[#10b981]">{vipCredits} MINS</span>
+                    </div>
+                    <input 
+                     type="range" 
+                     min="100" 
+                     max="2000" 
+                     step="100" 
+                     value={vipCredits} 
+                     onChange={(e) => setVipCredits(parseInt(e.target.value))} 
+                     className="w-full h-2 bg-white/5 rounded-full appearance-none cursor-pointer accent-[#10b981]" 
+                    />
+                 </div>
+                 <button 
+                   onClick={handleInjectVip}
+                   disabled={isInjecting}
+                   className="h-14 mt-4 bg-[#10b981] text-black font-black rounded-2xl text-[11px] uppercase tracking-[2px] border-none shadow-xl active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                 >
+                   {isInjecting ? "Processing..." : "Inject Access"}
+                 </button>
+              </div>
+           </div>
+
+           {/* Pending Queue */}
+           <div className="p-8 lg:p-12 bg-[#0A0A0B] rounded-[48px] border border-white/5 shadow-2xl flex flex-col gap-10">
+              <div className="flex justify-between items-center">
+                 <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
+                    <Database className="text-[#3b82f6]" size={24} /> Payments
+                 </h3>
+                 <RefreshCw 
+                   onClick={handleRefreshQueue}
+                   className={`text-[#404040] cursor-pointer hover:text-white transition-all ${isRefreshing ? 'animate-spin' : ''}`} 
+                   size={20} 
+                 />
+              </div>
+              <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar max-h-[400px]">
+                 {pendingTransactions.map(t => (
+                   <div key={t.id} className="p-6 bg-white/2 border border-white/5 rounded-[32px] flex flex-col gap-4 hover:border-white/10 transition-all">
+                      <div>
+                         <p className="text-lg font-black text-white tracking-tighter">₹{t.amount}</p>
+                         <p className="text-[8px] font-black text-[#404040] uppercase tracking-widest mt-1">UTR: {t.utr}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                         <button 
+                           onClick={() => handleApproveTransaction(t.id, t.utr, t.user_id, t.amount, t.user_email, t.user_name)}
+                           className="h-12 flex-1 bg-[#10b981] rounded-xl flex items-center justify-center border-none shadow-xl active:scale-90 transition-all cursor-pointer"
+                         >
+                            <CheckCircle2 size={20} className="text-black" />
+                         </button>
+                         <button 
+                           onClick={() => handleRejectTransaction(t.id, t.utr)}
+                           className="h-12 flex-1 bg-[#ef44441a] border border-[#ef444433] rounded-xl flex items-center justify-center active:scale-90 transition-all cursor-pointer"
+                         >
+                            <XCircle size={20} className="text-[#ef4444]" />
+                         </button>
+                      </div>
+                   </div>
+                 ))}
+                 {pendingTransactions.length === 0 && (
+                   <div className="text-center py-10">
+                      <p className="text-[9px] font-black text-[#404040] uppercase tracking-widest">Queue Clear</p>
+                   </div>
+                 )}
+              </div>
+           </div>
+        </div>
 
        <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
