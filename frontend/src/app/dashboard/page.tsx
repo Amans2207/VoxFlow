@@ -173,7 +173,7 @@ export default function Dashboard() {
                onChange={(e) => setSelectedLang(e.target.value)}
                className="flex-1 bg-white/2 border border-white/5 rounded-2xl px-6 font-black text-sm text-white focus:outline-none appearance-none cursor-pointer hover:border-white/10"
              >
-                {["Hindi", "English", "Spanish", "Marathi", "Bengali", "Spanish", "Japanese"].map(l => (
+                {["Hindi", "English", "Spanish", "Marathi", "Bengali", "Japanese"].map(l => (
                   <option key={l} value={l} className="bg-[#0A0A0B]">{l}</option>
                 ))}
              </select>
