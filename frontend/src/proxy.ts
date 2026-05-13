@@ -2,16 +2,18 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { updateSession } from './utils/supabase/supabase-middleware';
 
+import type { MiddlewareConfig } from 'next/server';
+
 /**
- * NEURAL PROXY v16 (MODERN CONVENTION)
- * Handles authentication shielding and session persistence.
+ * NEURAL PROXY v16 (MASTER MIDDLEWARE)
+ * Unified entry point for Auth, Session, and Shielding.
  */
-export async function handleProxy(request: NextRequest) {
-  // 1. Supabase Session Refresh
+export async function middleware(request: NextRequest) {
+  // 1. Supabase Session Persistence
   const supabaseResponse = await updateSession(request);
   const { pathname } = request.nextUrl;
 
-  // 2. Admin Shielding
+  // 2. Administrative Shielding
   if (pathname.startsWith('/dashboard/admin_vxf')) {
     const token = await getToken({ 
       req: request, 
@@ -26,8 +28,6 @@ export async function handleProxy(request: NextRequest) {
   return supabaseResponse;
 }
 
-import type { MiddlewareConfig } from 'next/server';
-
-export const proxyConfig: MiddlewareConfig = {
+export const config: MiddlewareConfig = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };
