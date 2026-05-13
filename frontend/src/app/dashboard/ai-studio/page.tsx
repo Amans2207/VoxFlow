@@ -314,7 +314,7 @@ export default function AIStudio() {
               </motion.div>
            )}
         </div>
-        </div>
+
 
         {/* Right: Configuration Sidebar */}
         <div className="lg:col-span-4 flex flex-col gap-10 lg:gap-12">
