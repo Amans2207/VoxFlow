@@ -30,7 +30,7 @@ logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(name)s - %(le
 logger = logging.getLogger("VoxFlow.NeuralCore")
 
 # Global Error Masking (Starboy themed alerts)
-@app.exception_handler(Exception)
+@api.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Critical Neural Error: {str(exc)}")
     return {
@@ -90,10 +90,10 @@ EXPORT_DIR = os.path.abspath("exports")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(EXPORT_DIR, exist_ok=True)
 
-app = FastAPI(title="VoxFlow AI Production Core")
+api = FastAPI(title="VoxFlow AI Production Core")
 
 # CORS Hardening (Titan-X Shield)
-app.add_middleware(
+api.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "https://voxflow.ai", "http://127.0.0.1:3000"],
     allow_credentials=True,
@@ -103,23 +103,23 @@ app.add_middleware(
 
 # Socket.io Integration
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
-socket_app = socketio.ASGIApp(sio, app)
+app = socketio.ASGIApp(sio, api)
 
-@app.get("/api/health")
+@api.get("/api/health")
 async def health_check():
     return {
         "status": "online", 
         "timestamp": datetime.datetime.now().isoformat(),
         "bridge": "Titan-X v1.0",
-        "port": 5001
+        "port": os.environ.get("PORT", 10000)
     }
 
-@app.post("/api/admin/broadcast/clear")
+@api.post("/api/admin/broadcast/clear")
 async def clear_broadcast_queue():
     print("[Admin] Clearing global broadcast queue...")
     return {"status": "success", "message": "Neural Broadcast Queue Purged"}
 
-@app.get("/api/user/projects")
+@api.get("/api/user/projects")
 async def get_user_projects(email: str = "anonymous"):
     print(f"[Neural Core] Fetching projects for: {email}")
     try:
@@ -175,10 +175,10 @@ def robust_json_parser(data: dict, schema_type: str):
     return normalized
 
 from fastapi.responses import FileResponse
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-app.mount("/exports", StaticFiles(directory="exports"), name="exports")
+api.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+api.mount("/exports", StaticFiles(directory="exports"), name="exports")
 
-@app.get("/exports/{filename}")
+@api.get("/exports/{filename}")
 async def serve_exports(filename: str):
     file_path = os.path.join(EXPORT_DIR, filename)
     if os.path.exists(file_path):
@@ -191,8 +191,8 @@ IS_PROD = os.getenv("ENV") == "production"
 # Redis-Backed Rate Limiting
 REDIS_URL = os.getenv("REDIS_URL", "memory://")
 limiter = Limiter(key_func=get_remote_address, storage_uri=REDIS_URL)
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+api.state.limiter = limiter
+api.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # JWT Security Layer
 JWT_SECRET = os.getenv("JWT_SECRET", "voxflow_neural_secret_2026")
@@ -255,7 +255,7 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-@app.websocket("/ws/status/{client_id}")
+@api.websocket("/ws/status/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
     await manager.connect(websocket)
     try:
@@ -274,7 +274,7 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
-app.add_middleware(
+api.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
@@ -288,12 +288,12 @@ class RegisterRequest(BaseModel):
     name: str = ""
     image: str = ""
 
-@app.get("/api/health")
+@api.get("/api/health")
 async def health_check():
     return {"status": "ok"}
 
-@app.post("/api/register")
-@app.post("/api/auth/google")
+@api.post("/api/register")
+@api.post("/api/auth/google")
 async def register_user(request: RegisterRequest):
     print(f"[Auth] Syncing User: {request.email}")
     # Logic: Check DB, if new, add 10 credits. 
@@ -309,7 +309,7 @@ async def register_user(request: RegisterRequest):
     }
 
 # Persistence: Endpoint to fetch/update credits
-@app.get("/api/user/credits")
+@api.get("/api/user/credits")
 async def get_user_credits(email: str):
     """Fetches user credits with Dev Bypass support."""
     if not supabase:
@@ -324,7 +324,7 @@ async def get_user_credits(email: str):
         logger.error(f"Credit Fetch Failed: {e}")
         return {"email": email, "credits": 500.0, "error": str(e)}
 
-@app.post("/api/user/credits/deduct")
+@api.post("/api/user/credits/deduct")
 async def deduct_credits(email: str, amount: float):
     if not supabase:
         return {"status": "error", "message": "Neural Vault Offline"}
@@ -365,7 +365,7 @@ from routes.autopilot_routes import autopilot_bp
 from routes.studio_routes import studio_bp
 
 # --- BROADCAST & WATCHDOG (CORE) ---
-@app.post("/api/admin/broadcast")
+@api.post("/api/admin/broadcast")
 async def system_broadcast_core(req: dict):
     from main import sio
     await sio.emit('system_broadcast', {
@@ -375,7 +375,7 @@ async def system_broadcast_core(req: dict):
     })
     return {"status": "success"}
 
-@app.post("/api/admin/broadcast/clear")
+@api.post("/api/admin/broadcast/clear")
 async def clear_broadcast():
     from main import sio
     # Logic to clear active broadcast from Redis/DB (Handled by emitting clear)
@@ -387,7 +387,7 @@ async def clear_broadcast():
     await sio.emit('broadcast_cleared', {"broadcast": True})
     return {"status": "success", "message": "Broadcast cleared"}
 
-@app.get("/api/user/projects")
+@api.get("/api/user/projects")
 async def get_user_projects(email: str = "anonymous"):
     # Logic to fetch projects from DB for this user
     mock_data = [
@@ -397,9 +397,9 @@ async def get_user_projects(email: str = "anonymous"):
     ]
     return {"status": "success", "projects": [], "data": mock_data}
 
-app.include_router(admin_router)
-app.include_router(autopilot_bp)
-app.include_router(studio_bp)
+api.include_router(admin_router)
+api.include_router(autopilot_bp)
+api.include_router(studio_bp)
 
 # Global Instances
 editor = VideoEditor()
@@ -417,7 +417,7 @@ def start_trend_worker():
     worker_thread = threading.Thread(target=trend_worker.simulate_scraping, daemon=True)
     worker_thread.start()
 
-@app.on_event("startup")
+@api.on_event("startup")
 async def startup_event():
     start_trend_worker()
 
@@ -477,7 +477,7 @@ class UploadResponse(BaseModel):
     local_path: str
     project_id: str
 
-@app.get("/health/gpu")
+@api.get("/health/gpu")
 async def gpu_health():
     try:
         nvenc_check = subprocess.run(["ffmpeg", "-encoders"], capture_output=True, text=True)
@@ -491,7 +491,7 @@ async def gpu_health():
     except Exception as e:
         return {"status": "Unhealthy", "error": str(e)}
 
-@app.post("/api/upload", response_model=UploadResponse)
+@api.post("/api/upload", response_model=UploadResponse)
 async def upload_video_direct(file: UploadFile = File(...)):
     print('Bhai, request mil gayi backend par! Route: /api/upload')
     try:
@@ -508,7 +508,7 @@ async def upload_video_direct(file: UploadFile = File(...)):
         if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
             raise Exception("I/O Failure: File write was not persistent")
 
-        API_BASE = os.environ.get("NEXT_PUBLIC_API_URL", "http://localhost:5000")
+        API_BASE = os.environ.get("NEXT_PUBLIC_API_URL", f"http://localhost:{os.environ.get('PORT', 10000)}")
         return {
             "status": "success",
             "url": f"{API_BASE}/uploads/{os.path.basename(file_path)}", 
@@ -521,7 +521,7 @@ async def upload_video_direct(file: UploadFile = File(...)):
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=500, content={"status": "error", "message": f"Server I/O Error: {str(e)}"})
 
-@app.post("/api/synthesis", dependencies=[Depends(verify_token)])
+@api.post("/api/synthesis", dependencies=[Depends(verify_token)])
 async def handle_synthesis(request: Request, background_tasks: BackgroundTasks):
     from fastapi.responses import JSONResponse
     try:
@@ -552,7 +552,7 @@ async def handle_synthesis(request: Request, background_tasks: BackgroundTasks):
         print(f"Synthesis Trigger Error: {e}")
         return JSONResponse(status_code=400, content={"error": str(e)})
 
-@app.post("/api/dub-elevenlabs", dependencies=[Depends(verify_token)])
+@api.post("/api/dub-elevenlabs", dependencies=[Depends(verify_token)])
 @limiter.limit(get_synthesis_limit)
 async def dub_elevenlabs(request: Request):
     from fastapi.responses import JSONResponse
@@ -577,7 +577,7 @@ async def dub_elevenlabs(request: Request):
         print(f"[API] Dubbing Internal Failure: {str(e)}")
         return JSONResponse(status_code=500, content={"status": "error", "message": f"Neural Core Error: {str(e)}"})
 
-@app.post("/api/dub", dependencies=[Depends(verify_token)])
+@api.post("/api/dub", dependencies=[Depends(verify_token)])
 async def process_dubbing(request: Request, background_tasks: BackgroundTasks):
     """
     Neural Core: Direct Dubbing Entry Point.
@@ -604,7 +604,7 @@ async def process_dubbing(request: Request, background_tasks: BackgroundTasks):
     except Exception as e:
         return JSONResponse(status_code=400, content={"status": "error", "message": f"Neural Core Validation Failed: {str(e)}"})
 
-@app.post("/editor/metadata")
+@api.post("/editor/metadata")
 async def generate_video_metadata(request: MetadataRequest):
     return {
         "instagram": {"title": "Viral Neural Edit ⚡", "desc": "Transformed this raw clip into a high-retention viral masterpiece using VoxFlow AI."},
@@ -612,7 +612,7 @@ async def generate_video_metadata(request: MetadataRequest):
         "tiktok": {"title": "Neural Hook Test #1", "desc": "AI just edited this video in 15 seconds. The future is here."}
     }
 
-@app.post("/api/clone")
+@api.post("/api/clone")
 async def upload_voice_clone(file: UploadFile = File(...), user_id: str = "anonymous"):
     try:
         os.makedirs("user_voices", exist_ok=True)
@@ -655,7 +655,7 @@ async def process_dubbing_task(request: DubRequest):
         if os.path.exists(output_video) and output_video != final_output:
             shutil.move(output_video, final_output)
         
-        port = os.environ.get("PORT", 5001)
+        port = os.environ.get("PORT", 10000)
         base_url = f"http://127.0.0.1:{port}"
         public_url = f"{base_url}/exports/dub_{job_id}.mp4"
         
@@ -682,7 +682,7 @@ async def process_dubbing_task(request: DubRequest):
         })
         task_state[job_id] = {"status": "failed", "error": str(e)}
 
-@app.post("/dub")
+@api.post("/dub")
 async def start_dubbing(request: DubRequest, background_tasks: BackgroundTasks):
     print('Bhai, request mil gayi backend par! Route: /dub')
     print(f"Received Dubbing Request for Job: {request.job_id}")
@@ -708,7 +708,7 @@ async def process_studio_export(request: ExportRequest):
         await manager.broadcast({"type": "render_status", "job_id": request.project_id, "status": "Rendering", "progress": 40, "message": "Applying Neural Styles..."})
         output_path = editor.export_project(render_data, is_pro=is_pro)
         
-        base_url = "http://127.0.0.1:5000"
+        base_url = f"http://127.0.0.1:{os.environ.get('PORT', 10000)}"
         public_url = f"{base_url}/{output_path}"
         
         # Deduct Credits after successful export
@@ -723,7 +723,7 @@ async def process_studio_export(request: ExportRequest):
         print(f"Export Error: {e}")
         await manager.broadcast({"type": "render_status", "job_id": request.project_id, "status": "Failed", "error": str(e), "message": f"Export Failed: {str(e)}"})
 
-@app.post("/api/edit", dependencies=[Depends(verify_token)])
+@api.post("/api/edit", dependencies=[Depends(verify_token)])
 @limiter.limit(get_synthesis_limit)
 async def edit_video(request: Request, background_tasks: BackgroundTasks):
     logger.info("Request received: /api/edit")
@@ -744,7 +744,7 @@ async def edit_video(request: Request, background_tasks: BackgroundTasks):
         print(f"[API] Edit Endpoint Error: {str(e)}")
         return {"status": "error", "message": str(e)}
 
-@app.post("/api/studio/auto-pilot")
+@api.post("/api/studio/auto-pilot")
 async def process_auto_pilot(request: Request, background_tasks: BackgroundTasks):
     print('Bhai, request mil gayi backend par! Route: /api/studio/auto-pilot')
     try:
@@ -762,7 +762,7 @@ async def run_autopilot_task(video_urls):
         # Use asyncio.to_thread for synchronous editor call
         output = await asyncio.to_thread(editor.auto_edit_sequence, video_urls)
         
-        port = os.environ.get("PORT", 5001)
+        port = os.environ.get("PORT", 10000)
         base_url = f"http://127.0.0.1:{port}"
         public_url = f"{base_url}/exports/{os.path.basename(output)}"
         
@@ -776,7 +776,7 @@ async def run_autopilot_task(video_urls):
         logger.error(f"Auto-Pilot Error: {e}")
         await sio.emit('render_status', {"status": "Failed", "message": f"Auto-Pilot Failed: {str(e)}"})
 
-@app.post("/api/marketplace/process")
+@api.post("/api/marketplace/process")
 @limiter.limit(get_synthesis_limit)
 async def process_marketplace_item(request: Request, background_tasks: BackgroundTasks):
     print('Bhai, request mil gayi backend par! Route: /api/marketplace/process')
@@ -829,7 +829,7 @@ async def run_marketplace_pipeline(template, video_urls, user_id):
         # Use asyncio.to_thread
         output_video = await asyncio.to_thread(editor.export_project, render_data)
         
-        port = os.environ.get("PORT", 5001)
+        port = os.environ.get("PORT", 10000)
         base_url = f"http://127.0.0.1:{port}"
         public_url = f"{base_url}/exports/{os.path.basename(output_video)}"
         
@@ -854,7 +854,7 @@ async def run_marketplace_pipeline(template, video_urls, user_id):
             "message": "Synthesis Engine Crash"
         })
 
-@app.post("/api/video/generate")
+@api.post("/api/video/generate")
 async def generate_script_to_video(request: Request, background_tasks: BackgroundTasks):
     """Neural Director: Orchestrates script, voice, and visual assembly."""
     data = await request.json()
@@ -883,7 +883,7 @@ async def neural_director_worker(job_id: str, data: dict):
         await asyncio.sleep(2)
         
         # Simulated Result
-        port = os.environ.get("PORT", 5001)
+        port = os.environ.get("PORT", 10000)
         public_url = f"http://127.0.0.1:{port}/exports/vxf_29ed8a3a_home_alone_1990_2390_.mp4"
         
         await sio.emit('render_status', {
@@ -897,7 +897,7 @@ async def neural_director_worker(job_id: str, data: dict):
         logger.error(f"Director Failure: {e}")
         await sio.emit('render_status', {"job_id": job_id, "status": "Failed", "message": str(e)})
 
-@app.post("/api/media/extract")
+@api.post("/api/media/extract")
 async def extract_audio_endpoint(request: Request):
     """Neural SFX: Isolates audio stream from video source."""
     data = await request.json()
@@ -910,7 +910,7 @@ async def extract_audio_endpoint(request: Request):
     # For demo, we return a success immediately
     return {"status": "success", "message": "Magic Strip: Audio Extracted", "audio_url": "/exports/extracted_sample.mp3"}
 
-@app.post("/api/video/split")
+@api.post("/api/video/split")
 async def split_video_endpoint(request: Request):
     """Razor Tool: Performs frame-perfect neural split."""
     data = await request.json()
@@ -932,7 +932,7 @@ async def dubbing_worker(job_id: str, video_url: str, target_lang: str, user_ema
     )
     await process_dubbing_task(req)
 
-@app.post("/api/audio/dubbing")
+@api.post("/api/audio/dubbing")
 async def start_dubbing_neural(request: Request, background_tasks: BackgroundTasks):
     data = await request.json()
     job_id = data.get("job_id", f"dub_{uuid.uuid4().hex[:8]}")
@@ -953,20 +953,20 @@ async def start_dubbing_neural(request: Request, background_tasks: BackgroundTas
     
     return {"status": "success", "job_id": job_id, "message": "Neural Dubbing Dispatched to Titan-X"}
 
-@app.post("/api/audio/enhance")
+@api.post("/api/audio/enhance")
 async def enhance_audio(request: Request, background_tasks: BackgroundTasks):
     data = await request.json()
     print(f"[Neural Core] Audio Enhancement Requested: {data.get('video_url')}")
     # Logic: DeepFilterNet / Noise Removal
     return {"status": "success", "message": "Audio Enhancement Dispatched"}
 
-@app.post("/api/audio/caption")
+@api.post("/api/audio/caption")
 async def generate_captions(request: Request, background_tasks: BackgroundTasks):
     data = await request.json()
     print(f"[Neural Core] Whisper Auto-Captions Requested: {data.get('video_url')}")
     # Logic: Whisper API -> SRT -> Burn-in with FFmpeg
     return {"status": "success", "message": "Caption Synthesis Initialized"}
-@app.post("/api/ai/process-video")
+@api.post("/api/ai/process-video")
 async def process_video_unified(request: Request, background_tasks: BackgroundTasks):
     """Unified AI Video Engine Entry Point (Emergency Protocol)."""
     try:
@@ -987,12 +987,12 @@ async def process_video_unified(request: Request, background_tasks: BackgroundTa
         return {"status": "success", "job_id": job_id, "message": "Neural Engine Dispatched Successfully"}
     except Exception as e:
         return {"status": "error", "message": f"Neural Engine Failure: {str(e)}"}
-@app.get("/api/task/status/{task_id}")
+@api.get("/api/task/status/{task_id}")
 async def get_task_status(task_id: str):
     return task_state.get(task_id, {"status": "not_found"})
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 5001))
+    port = int(os.environ.get("PORT", 10000))
     print(f"Neural Core: Ignition on port {port} with Socket.io Support")
-    uvicorn.run(socket_app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
