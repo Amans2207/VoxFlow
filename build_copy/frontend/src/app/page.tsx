@@ -18,26 +18,8 @@ import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/Toast";
 import { soundEngine } from "@/utils/SoundEngine";
 import { createClient } from '@/utils/supabase/client';
-import Script from "next/script";
 
 export default function Home() {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "VoxFlow AI",
-    "operatingSystem": "Windows, Web",
-    "applicationCategory": "MultimediaApplication",
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.9",
-      "ratingCount": "1248"
-    },
-    "offers": {
-      "@type": "Offer",
-      "price": "999.00",
-      "priceCurrency": "INR"
-    }
-  };
   const { setTheme, currentTheme } = useTheme();
   const { showToast } = useToast();
   const [userCount, setUserCount] = React.useState(0);
@@ -101,11 +83,6 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      <Script
-        id="structured-data"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
       <div className="mesh-bg"></div>
       
       {/* Live Performance Ticker */}

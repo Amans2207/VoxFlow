@@ -18,8 +18,6 @@ import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
 import { useHardRefresh } from "@/hooks/useNeuralPolling";
 import MobileConnectModal from "@/components/MobileConnectModal";
 import GlobalBanner from "@/components/GlobalBanner";
-import { API_BASE_URL } from "@/lib/apiConfig";
-import { showAIRecommendationToast } from "@/utils/RecommendationEngine";
 
 export default function DashboardLayout({
   children,
@@ -77,17 +75,8 @@ export default function DashboardLayout({
         // Trigger background sync
         userStore.fetchUserCredits(userEmail);
       }
-
-      // 3. AI Recommendation Protocol (Hook User)
-      const credits = creditBalance || 0;
-      setTimeout(() => {
-        showAIRecommendationToast({ 
-          credits, 
-          lastAction: pathname.includes('studio') ? 'upload_complete' : undefined 
-        });
-      }, 5000);
     }
-  }, [session, creditBalance, pathname]);
+  }, [session, creditBalance]);
 
   // Global Command (Ctrl + K)
   useEffect(() => {

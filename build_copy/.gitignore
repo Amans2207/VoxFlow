@@ -1,0 +1,35 @@
+# Backend
+backend/__pycache__/
+backend/*.py[cod]
+backend/venv/
+backend/.venv/
+backend/env/
+backend/.env
+backend/uploads/
+backend/exports/
+backend/user_voices/
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/dist/
+frontend/out/
+frontend/build/
+frontend/.env*
+
+# VoxFlow Media & Data
+*.mp4
+*.mp3
+*.wav
+*.json
+!backend/trending.json
+!backend/templates.json
+!frontend/package.json
+!frontend/tsconfig.json
+
+# IDE & Misc
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store

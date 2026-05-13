@@ -1,0 +1,67 @@
+{
+    "last_updated": 1778562485.9912937,
+    "trending_music": [
+        {
+            "id": "m1",
+            "title": "Neural Pulse",
+            "artist": "Cyber-Rush",
+            "trend_score": 98,
+            "vibe": "Hype",
+            "bpm": 128
+        },
+        {
+            "id": "m2",
+            "title": "Golden Hour AI",
+            "artist": "Aman Studio",
+            "trend_score": 95,
+            "vibe": "Cinematic",
+            "bpm": 85
+        },
+        {
+            "id": "m3",
+            "title": "Starboy Edit",
+            "artist": "The Weeknd (Vox Dub)",
+            "trend_score": 92,
+            "vibe": "Starboy",
+            "bpm": 110
+        },
+        {
+            "id": "m4",
+            "title": "Emerald Phantom",
+            "artist": "Drift King",
+            "trend_score": 89,
+            "vibe": "Emerald",
+            "bpm": 140
+        }
+    ],
+    "trending_styles": [
+        {
+            "id": "s1",
+            "name": "Velocity Edit",
+            "type": "Blueprint",
+            "difficulty": "Pro",
+            "popularity": "Rising"
+        },
+        {
+            "id": "s2",
+            "name": "Glitch Transitions",
+            "type": "FX Pack",
+            "difficulty": "Easy",
+            "popularity": "High"
+        },
+        {
+            "id": "s3",
+            "name": "Kinetic Typography",
+            "type": "Typography",
+            "difficulty": "Medium",
+            "popularity": "Top"
+        }
+    ],
+    "viral_tags": [
+        "#ai",
+        "#editing",
+        "#voxflow",
+        "#viral",
+        "#reels"
+    ]
+}
