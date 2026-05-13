@@ -25,40 +25,10 @@ from dotenv import load_dotenv
 import asyncio
 import socketio
 
-# Initialize Logging (Production Mode)
-logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger("VoxFlow.NeuralCore")
-
-# Global Error Masking (Starboy themed alerts)
-@api.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Critical Neural Error: {str(exc)}")
-    return {
-        "status": "error",
-        "message": "Something went wrong in the neural core, our engineers are on it. ☄️",
-        "code": "STARDUST_FAILURE"
-    }
-
-# Core Engines
-from editor import VideoEditor
-from vision_engine import VisionEngine
-from pipeline import DubbingPipeline
-from supabase import create_client, Client
-from werkzeug.utils import secure_filename
-from utils.mailer import mailer
+from core_engine import supabase, sio, limiter, manager, editor, vision_engine, logger
+import core_engine
 
 load_dotenv()
-
-# Initialize Supabase
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
-supabase: Client = None
-if SUPABASE_URL and SUPABASE_KEY:
-    try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        logger.info("Neural Core: Supabase Vault Linked")
-    except Exception as e:
-        logger.error(f"Neural Core: Supabase Connection Failed - {e}")
 
 def retry_with_backoff(max_retries=3, initial_delay=1):
     def decorator(func):
@@ -92,17 +62,22 @@ os.makedirs(EXPORT_DIR, exist_ok=True)
 
 api = FastAPI(title="VoxFlow AI Production Core")
 
-# CORS Hardening (Titan-X Shield)
+# Global Error Masking
+@api.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Critical Neural Error: {str(exc)}")
+    return {"status": "error", "message": "Neural Core Failure"}
+
+# CORS Hardening
 api.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://voxflow.ai", "http://127.0.0.1:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Socket.io Integration
-sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
+# Entry Point for Gunicorn (main:app)
 app = socketio.ASGIApp(sio, api)
 
 @api.get("/api/health")
@@ -189,8 +164,6 @@ async def serve_exports(filename: str):
 IS_PROD = os.getenv("ENV") == "production"
 
 # Redis-Backed Rate Limiting
-REDIS_URL = os.getenv("REDIS_URL", "memory://")
-limiter = Limiter(key_func=get_remote_address, storage_uri=REDIS_URL)
 api.state.limiter = limiter
 api.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -385,10 +358,10 @@ async def clear_broadcast():
     await sio.emit('broadcast_cleared', {"broadcast": True})
     return {"status": "success", "message": "Broadcast cleared"}
 
-# Global Instances
-editor = VideoEditor()
-vision_engine = VisionEngine()
+# Global Variables
 pipeline = None
+
+from pipeline import DubbingPipeline
 
 def get_pipeline():
     global pipeline

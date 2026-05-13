@@ -53,7 +53,7 @@ class PaymentApprove(BaseModel):
 
 @router.get("/users", response_model=List[UserProfile])
 async def get_all_users(query: Optional[str] = None):
-    from main import supabase
+    from core_engine import supabase
     if not supabase:
         return []
     
@@ -72,7 +72,7 @@ async def admin_user_actions(req: Dict[str, Any]):
     """
     MASTER ADMIN HANDLER: Manages credits, blocking, and status updates.
     """
-    from main import supabase, sio
+    from core_engine import supabase, sio
     user_id = req.get("userId")
     action = req.get("action")
     
@@ -115,7 +115,7 @@ async def update_user_credits(req: CreditUpdate):
     ATOMIC CREDIT ENGINE:
     Ensures thread-safe increment/decrement with immediate real-time sync.
     """
-    from main import supabase, sio
+    from core_engine import supabase, sio
     if not supabase:
         return {"status": "success", "new_balance": 1000.0}
 
@@ -171,7 +171,7 @@ async def update_user_credits(req: CreditUpdate):
 @router.post("/assets/deploy")
 async def deploy_global_asset(asset: AssetDeploy):
     """Global Asset Propagation: Instantly available to all users."""
-    from main import supabase, sio
+    from core_engine import supabase, sio
     try:
         new_asset = {
             "id": f"ast_{uuid.uuid4().hex[:8]}",
@@ -198,7 +198,7 @@ async def deploy_global_asset(asset: AssetDeploy):
 
 @router.put("/role")
 async def update_user_role(req: RoleUpdate):
-    from main import supabase
+    from core_engine import supabase
     if not supabase:
         return {"status": "success", "new_role": req.role}
     
@@ -216,7 +216,7 @@ async def update_user_role(req: RoleUpdate):
 
 @router.get("/promos")
 async def get_all_promos():
-    from main import supabase
+    from core_engine import supabase
     if not supabase:
         return [
             {"id": "1", "code": "STARBOY", "amount": 10.0, "is_active": True, "usage_count": 45, "expiry": "2026-12-31"},
@@ -231,7 +231,7 @@ async def get_all_promos():
 
 @router.post("/promos/create")
 async def create_promo(req: Dict[str, Any]):
-    from main import supabase
+    from core_engine import supabase
     try:
         new_promo = {
             "id": f"prm_{uuid.uuid4().hex[:8]}",
@@ -252,7 +252,7 @@ async def create_promo(req: Dict[str, Any]):
 
 @router.get("/queue")
 async def get_neural_queue():
-    from main import supabase
+    from core_engine import supabase
     if not supabase: return []
     try:
         res = supabase.table("jobs").select("*").order("created_at", { "ascending": False }).execute()
@@ -261,7 +261,7 @@ async def get_neural_queue():
 
 @router.post("/queue")
 async def force_job_rerender(data: Dict[str, str]):
-    from main import supabase, sio
+    from core_engine import supabase, sio
     job_id = data.get("jobId")
     if supabase and job_id:
         supabase.table("jobs").update({"status": "Pending", "progress": 0}).eq("id", job_id).execute()
@@ -270,7 +270,7 @@ async def force_job_rerender(data: Dict[str, str]):
 
 @router.post("/create-vip")
 async def create_vip_account(req: VIPCreate):
-    from main import supabase
+    from core_engine import supabase
     try:
         # 1. Create Profile (Auth bypass for admin manual entry)
         new_profile = {
@@ -296,7 +296,7 @@ async def create_vip_account(req: VIPCreate):
 
 @router.post("/create-superuser")
 async def create_superuser_account(req: SuperUserCreate):
-    from main import supabase
+    from core_engine import supabase
     try:
         new_profile = {
             "email": req.email,
@@ -314,7 +314,7 @@ async def create_superuser_account(req: SuperUserCreate):
 
 @router.post("/approve-payment")
 async def approve_payment(req: PaymentApprove):
-    from main import supabase, sio
+    from core_engine import supabase, sio
     try:
         if supabase:
             # 1. Update Transaction
@@ -340,7 +340,7 @@ async def approve_payment(req: PaymentApprove):
 
 @router.put("/promos/toggle/{id}")
 async def toggle_promo(id: str, active: bool):
-    from main import supabase
+    from core_engine import supabase
     try:
         if supabase:
             supabase.table("promos").update({"is_active": active}).eq("id", id).execute()
@@ -352,7 +352,7 @@ async def toggle_promo(id: str, active: bool):
 
 @router.post("/promo/apply")
 async def apply_promo(data: Dict[str, str]):
-    from main import supabase, sio
+    from core_engine import supabase, sio
     code = data.get("code", "").upper()
     identity = data.get("email") # Could be email or user_id
     
@@ -407,7 +407,7 @@ async def apply_promo(data: Dict[str, str]):
 
 @router.post("/broadcast")
 async def system_broadcast(req: Dict[str, str]):
-    from main import sio
+    from core_engine import sio
     await sio.emit('system_broadcast', {
         "message": req.get("message", "System Update in Progress"),
         "type": req.get("type", "info"),
@@ -417,7 +417,7 @@ async def system_broadcast(req: Dict[str, str]):
 
 @router.post("/broadcast/clear")
 async def clear_broadcast():
-    from main import sio
+    from core_engine import sio
     await sio.emit('system_broadcast', {
         "message": None,
         "type": "clear",
