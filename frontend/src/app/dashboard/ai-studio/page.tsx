@@ -5,7 +5,7 @@ import {
   Upload, Sparkles, Wand2, Shield, Activity, 
   Zap, Loader2, Globe, CheckCircle2, Play, 
   RefreshCw, Layers, Volume2, Mic, Settings2,
-  ChevronDown
+  ChevronDown, Smartphone, Monitor
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/components/Toast";
@@ -68,6 +68,10 @@ export default function AIStudio() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showExportModal, setShowExportModal] = useState(false);
   const [resultVideoUrl, setResultVideoUrl] = useState<string | null>(null);
+  const [format, setFormat] = useState('9:16');
+  const [useBranding, setUseBranding] = useState(true);
+  const [captions, setCaptions] = useState("MASTERING THE NEURAL ENGINE");
+
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -234,6 +238,49 @@ export default function AIStudio() {
                     <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Titan-X Parallel Streams Active</span>
                  </div>
                   <button className="text-[9px] font-black text-[#10b981] uppercase tracking-widest border-b border-[#10b98133]">Configure Storage</button>
+              </div>
+           </div>
+
+           {/* Neural Configuration HUD */}
+           <div className="p-10 bg-[#0A0A0B] border border-white/5 rounded-[48px] flex flex-col gap-8">
+              <div className="flex flex-col gap-2">
+                 <span className="text-[10px] font-black text-[#404040] uppercase tracking-[4px]">Neural Config</span>
+                 <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">Creative <span className="text-[#CCFF00]">Parameters</span></h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 {/* Format Selector */}
+                 <div className="flex flex-col gap-4">
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Output Format</span>
+                    <div className="flex gap-4">
+                       <button 
+                         onClick={() => { setFormat('9:16'); soundEngine?.play("click"); }}
+                         className={`flex-1 h-16 rounded-2xl border flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all ${format === '9:16' ? 'bg-[#CCFF00] border-[#CCFF00] text-black' : 'bg-white/2 border-white/5 text-zinc-500'}`}
+                       >
+                          <Smartphone size={16} /> 9:16 Reels
+                       </button>
+                       <button 
+                         onClick={() => { setFormat('16:9'); soundEngine?.play("click"); }}
+                         className={`flex-1 h-16 rounded-2xl border flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all ${format === '16:9' ? 'bg-[#CCFF00] border-[#CCFF00] text-black' : 'bg-white/2 border-white/5 text-zinc-500'}`}
+                       >
+                          <Monitor size={16} /> 16:9 Widescreen
+                       </button>
+                    </div>
+                 </div>
+
+                 {/* Branding Toggle */}
+                 <div className="flex flex-col gap-4">
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Branding Layer</span>
+                    <button 
+                      onClick={() => { setUseBranding(!useBranding); soundEngine?.play("click"); }}
+                      className={`h-16 px-8 rounded-2xl border flex items-center justify-between text-[10px] font-black uppercase tracking-widest transition-all ${useBranding ? 'bg-[#a855f71a] border-[#a855f733] text-[#a855f7]' : 'bg-white/2 border-white/5 text-zinc-500'}`}
+                    >
+                       <div className="flex items-center gap-3">
+                          <Shield size={16} /> Add Watermark
+                       </div>
+                       <div className={`w-4 h-4 rounded-full border-2 transition-all ${useBranding ? 'bg-[#a855f7] border-[#a855f7]' : 'border-zinc-700'}`} />
+                    </button>
+                 </div>
               </div>
            </div>
 

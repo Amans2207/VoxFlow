@@ -19,21 +19,21 @@ const sora = Sora({
 export const metadata: Metadata = {
   metadataBase: new URL('https://voxflow.ai'),
   title: {
-    default: "VoxFlow AI | The Neural Video Production Suite",
+    default: "VoxFlow AI | The Viral Video Production Studio",
     template: "%s | VoxFlow AI"
   },
-  description: "Experience the future of video production with Titan-X Neural Dubbing, Generative AI, and Precision Editing. Orchestrate viral content with AI precision.",
+  description: "Create AI videos in seconds. The world's most powerful AI Video Production Studio for Creators and Agencies. Powered by the Titan-X Neural Engine.",
   applicationName: "VoxFlow AI",
   authors: [{ name: "Aman Studio" }],
   generator: "Next.js",
-  keywords: ["AI Video Editor", "Neural Dubbing", "Titan-X Engine", "Automated Video Production", "Aman Studio", "VoxFlow"],
+  keywords: ["AI Video Editor", "Neural Dubbing", "Hormozi Captions", "Titan-X Engine", "Automated Video Production", "Aman Studio", "VoxFlow"],
   referrer: "origin-when-cross-origin",
   themeColor: "#000000",
   viewport: "width=device-width, initial-scale=1, maximum-scale=1",
   openGraph: {
-    title: "VoxFlow AI | Next-Gen Video Production",
-    description: "The world's most powerful AI Video Production Studio. Powered by the Titan-X Neural Engine.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    title: "VoxFlow AI | Next-Gen AI Video Production",
+    description: "Orchestrate viral content in 100+ languages with AI precision. The future of video creation is here.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "VoxFlow AI Studio" }],
     url: 'https://voxflow.ai',
     siteName: "VoxFlow AI",
     locale: "en_US",
@@ -41,16 +41,19 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "VoxFlow AI | Next-Gen Video Engine",
-    description: "Orchestrate viral content with AI precision.",
+    title: "VoxFlow AI | Next-Gen AI Video Studio",
+    description: "Create viral videos in seconds with the Titan-X Neural Engine.",
     creator: "@voxflow_ai",
     images: ["/twitter-image.png"],
   },
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.png", type: "image/png" },
+    ],
     apple: "/apple-touch-icon.png",
-  }
+  },
 };
 
 import { ThemeProvider } from "@/context/ThemeContext";

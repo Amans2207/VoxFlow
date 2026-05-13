@@ -13,7 +13,7 @@ const VoicePlayground = dynamic(() => import("@/components/VoicePlayground"), {
 });
 import { motion } from "framer-motion";
 import { signIn } from "next-auth/react";
-import { Zap, Globe, Sparkles, Monitor, Layout, Users, Briefcase, ChevronRight, Wand2 } from "lucide-react";
+import { Zap, Globe, Sparkles, Monitor, Layout, Users, Briefcase, ChevronRight, Wand2, Upload, Rocket, Brain } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/Toast";
 import { soundEngine } from "@/utils/SoundEngine";
@@ -249,6 +249,37 @@ export default function Home() {
           </div>
         </motion.div>
 
+      </section>
+
+      {/* How it Works Section */}
+      <section id="how-it-works" className={styles.section} style={{ marginTop: '120px' }}>
+        <div className={styles.sectionHeader} style={{ textAlign: 'center', marginBottom: '80px' }}>
+          <div className={styles.sectionLabel}>The Protocol</div>
+          <h2 style={{ fontSize: '4.5rem', fontWeight: 900 }}>How the Engine Works</h2>
+        </div>
+        
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-16 px-4">
+          {[
+            { step: "01", title: "Neural Ingestion", desc: "Upload your raw media to our secure vaults. We support every format from 4K ProRes to mobile recordings.", icon: <Upload size={32} /> },
+            { step: "02", title: "Titan Synthesis", desc: "Our neural engine orchestrates the dubbing, lip-syncing, and framing. It's fully asynchronous and ultra-fast.", icon: <Brain size={32} /> },
+            { step: "03", title: "Global Export", desc: "Download your viral-ready assets. 100+ languages, Hormozi-style captions, and custom branding applied.", icon: <Rocket size={32} /> }
+          ].map((item, idx) => (
+            <motion.div 
+              key={item.step}
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.2 }}
+              className="flex flex-col gap-6"
+            >
+              <div className="text-5xl font-black text-white/5">{item.step}</div>
+              <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-500">
+                {item.icon}
+              </div>
+              <h3 className="text-2xl font-black text-white uppercase tracking-tighter">{item.title}</h3>
+              <p className="text-zinc-500 text-sm font-medium leading-relaxed uppercase tracking-wider">{item.desc}</p>
+            </motion.div>
+          ))}
+        </div>
       </section>
 
       {/* 3-Step Viral Workflow */}

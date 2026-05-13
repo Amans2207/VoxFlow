@@ -1195,12 +1195,22 @@ async def process_video_route(req: dict, background_tasks: BackgroundTasks):
         db_task_id = None
 
     # Wrap in concurrency control + Cloud Upload
-    async def render_and_upload(path, fname, tid):
+    async def render_and_upload(path, fname, tid, output_format='9:16', captions=None, use_branding=True):
+        if tid:
+            supabase.table("tasks").update({"status": "processing"}).eq("id", tid).execute()
+        
         await generate_video_ffmpeg(audio_path, image_path, path)
         
+        # ELITE UPGRADE: Apply Overlays (Watermark/Captions/Format)
+        from services.overlay_engine import apply_studio_overlays
+        logo_path = "assets/branding/logo.png" if use_branding else None
+        apply_studio_overlays(path, logo_path=logo_path, captions=captions, output_format=output_format)
+
         # Cloud Sync
         from utils.cloud_storage import upload_to_cloud
+
         cloud_url = upload_to_cloud(path, public_id=fname.split('.')[0])
+
         
         if tid:
             supabase.table("tasks").update({
@@ -1211,7 +1221,11 @@ async def process_video_route(req: dict, background_tasks: BackgroundTasks):
         
         log_system_event("VIDEO_GEN_COMPLETED", f"Job {job_id} uploaded to Cloud", {"url": cloud_url})
 
-    background_tasks.add_task(queued_render_task, render_and_upload, output_path, filename, db_task_id)
+    output_format = req.get("format", "9:16")
+    captions_text = req.get("captions", "")
+    use_branding = req.get("use_branding", True)
+
+    background_tasks.add_task(queued_render_task, render_and_upload, output_path, filename, db_task_id, output_format, captions_text, use_branding)
     
     # 4. Log Job Creation
     log_system_event("VIDEO_GEN_STARTED", f"Job {job_id} for {email}", {"email": email, "job_id": job_id})
