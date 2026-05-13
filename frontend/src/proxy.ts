@@ -26,6 +26,8 @@ export async function handleProxy(request: NextRequest) {
   return supabaseResponse;
 }
 
-export const proxyConfig = {
+import type { MiddlewareConfig } from 'next/server';
+
+export const proxyConfig: MiddlewareConfig = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };

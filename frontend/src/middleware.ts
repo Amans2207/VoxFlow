@@ -1,5 +1,5 @@
 import { handleProxy } from './proxy';
-import type { NextRequest } from 'next/server';
+import type { NextRequest, MiddlewareConfig } from 'next/server';
 
 /**
  * NEXT.JS BRIDGE
@@ -9,6 +9,6 @@ export async function middleware(request: NextRequest) {
   return await handleProxy(request);
 }
 
-export const config = {
+export const config: MiddlewareConfig = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };
