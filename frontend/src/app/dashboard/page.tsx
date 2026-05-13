@@ -5,7 +5,7 @@ import {
   Zap, Sparkles, Wand2, Activity, Cpu, Play, 
   Plus, Search, Clock, ArrowUpRight, BarChart3,
   Monitor, Video, Share2, Layers, Brain, Layout,
-  X, Send, Mic, Film, CloudLightning, Loader2, ChevronRight, Globe, Calendar, User
+  X, Send, Mic, Film, CloudLightning, Loader2, ChevronRight, Globe, Calendar, User, Upload
 } from "lucide-react";
 import { executeNeuralTask } from "@/utils/NeuralShield";
 import { useEditorStore } from "@/store/useEditorStore";
