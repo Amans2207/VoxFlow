@@ -4,6 +4,7 @@ import "./globals.css";
 import Script from "next/script";
 import { SocketProvider } from "@/components/SocketProvider";
 import { JourneyTracker } from "@/components/JourneyTracker";
+import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -28,8 +29,6 @@ export const metadata: Metadata = {
   generator: "Next.js",
   keywords: ["AI Video Editor", "Neural Dubbing", "Hormozi Captions", "Titan-X Engine", "Automated Video Production", "Aman Studio", "VoxFlow"],
   referrer: "origin-when-cross-origin",
-  themeColor: "#000000",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
   openGraph: {
     title: "VoxFlow AI | Next-Gen AI Video Production",
     description: "Orchestrate viral content in 100+ languages with AI precision. The future of video creation is here.",
@@ -54,6 +53,13 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-touch-icon.png",
   },
+};
+
+export const viewport = {
+  themeColor: "#000000",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 import { ThemeProvider } from "@/context/ThemeContext";
