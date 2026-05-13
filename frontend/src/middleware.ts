@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { updateSession } from './utils/supabase/middleware';
+import { updateSession } from './utils/supabase/supabase-middleware';
 
 /**
  * TITAN-X UNIFIED MIDDLEWARE (PROD-READY)
