@@ -38,7 +38,7 @@ export default function DashboardLayout({
       {/* SIDEBAR */}
       <aside className="hidden lg:flex w-64 bg-[#0A0A0B] border-r border-white/5 flex-col shrink-0">
         <div className="p-8 pb-10">
-          <Link href="/dashboard" className="text-xl font-black tracking-tighter text-blue-500 uppercase no-underline">
+          <Link href="/dashboard" className="text-xl font-black tracking-tighter text-blue-500 uppercase no-underline italic">
             VOXFLOW
           </Link>
         </div>
@@ -51,7 +51,7 @@ export default function DashboardLayout({
               className={`flex items-center gap-3 px-4 h-12 rounded-xl transition-all ${
                 pathname === item.href 
                 ? "bg-white/10 text-white" 
-                : "text-zinc-500 hover:text-white hover:bg-white/5"
+                : "text-zinc-400 hover:text-white hover:bg-white/5"
               }`}
             >
               {item.icon}

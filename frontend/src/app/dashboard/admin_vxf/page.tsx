@@ -10,6 +10,8 @@ import {
 import InteractiveGlobe from "@/components/InteractiveGlobe";
 import { useToast } from '@/components/Toast';
 import { soundEngine } from '@/utils/SoundEngine';
+import api from "@/lib/api";
+import { motion } from "framer-motion";
 
 export default function AdminDashboard() {
   const { showToast } = useToast();
@@ -23,6 +25,13 @@ export default function AdminDashboard() {
   const [vipName, setVipName] = useState("");
    const [isInjecting, setIsInjecting] = useState(false);
    const [systemHealth, setSystemHealth] = useState<any>({ database: 'offline', neural_link: 'offline' });
+   const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
+   const [platformStats, setPlatformStats] = useState<any>({
+      total_users: 0,
+      total_videos: 0,
+      api_burn: "0.00",
+      revenue: "0.00"
+   });
 
 
   useEffect(() => {
@@ -39,14 +48,16 @@ export default function AdminDashboard() {
           setIsMaintenance(maint.active);
 
           // Fetch System Health
-          const health = await safeFetch('/api/health');
+          const health = await api.get('/health');
           setSystemHealth(health);
 
+          // Fetch Platform Stats
+          const stats = await api.get('/admin/stats');
+          setPlatformStats(stats);
+
           // Fetch Pending Transactions
-          setPendingTransactions([
-            { id: '1', amount: 999, utr: '876608312901', user_id: 'User_442', user_email: 'test@user.com', user_name: 'Test User' },
-            { id: '2', amount: 2499, utr: 'UTR_88229911', user_id: 'User_901', user_email: 'creator@vfx.io', user_name: 'Creator' }
-          ]);
+          const txns = await api.get('/admin/pending-transactions');
+          setPendingTransactions(txns);
 
           // Fetch Users (Mock for now)
           setUsers([
@@ -177,10 +188,10 @@ export default function AdminDashboard() {
                 <Shield size={20} />
                 <span className="text-[10px] font-black uppercase tracking-widest">{isMaintenance ? "Maintenance ACTIVE" : "Toggle Maintenance"}</span>
              </button>
-             <div className="bg-white/3 p-4 md:p-5 rounded-2xl border border-white/5 text-right">
-                <p className="text-[9px] font-black text-[#404040] uppercase tracking-widest">Neural Engine</p>
-                <p className="text-lg font-black text-[#10b981] uppercase">OPTIMIZED</p>
-             </div>
+              <div className="bg-white/3 p-4 md:p-5 rounded-2xl border border-white/5 text-right">
+                 <p className="text-[9px] font-black text-[#404040] uppercase tracking-widest">Platform Revenue</p>
+                 <p className="text-lg font-black text-[#10b981] uppercase">₹{platformStats.revenue}</p>
+              </div>
           </div>
        </header>
 

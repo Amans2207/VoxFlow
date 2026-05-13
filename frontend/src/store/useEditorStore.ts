@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import api from '@/lib/api';
 
 export interface Clip {
   id: string;
@@ -70,6 +71,12 @@ interface EditorState {
   addToRetryQueue: (fileName: string) => void;
   removeFromRetryQueue: (fileName: string) => void;
   setCreditBalance: (amount: number) => void;
+  fetchCreditBalance: (email: string) => Promise<void>;
+  setUploadedVideoUrl: (url: string | null) => void;
+  setActiveJobId: (id: string | null) => void;
+  setUploadProgress: (fileName: string, progress: number) => void;
+  addToUploadQueue: (fileName: string) => void;
+  removeFromUploadQueue: (fileName: string) => void;
 }
 
 export const useEditorStore = create<EditorState>()(
@@ -112,8 +119,36 @@ export const useEditorStore = create<EditorState>()(
       setLipsyncSync: (sync) => set({ lipsyncSync: sync }),
       setSmartBRoll: (active) => set({ smartBRoll: active }),
       incrementRenders: () => set((state) => ({ renderCount: state.renderCount + 1 })),
-      deductCredits: (amount) => set((state) => ({ creditBalance: state.creditBalance - amount })),
+      deductCredits: async (amount) => {
+        const email = "aman@voxflow.ai"; // In production, get from session
+        try {
+          const response: any = await api.post('/user/credits/deduct', {
+            email,
+            amount
+          });
+          if (response.status === 'success') {
+            set({ creditBalance: response.new_balance });
+          }
+        } catch (error) {
+          console.error("[Neural Bridge] Credit deduction failure:", error);
+          set((state) => ({ creditBalance: state.creditBalance - amount }));
+        }
+      },
+
+      fetchCreditBalance: async (email: string) => {
+        try {
+          const response: any = await api.get(`/user/credits?email=${email}`);
+          if (response.credits !== undefined) {
+            set({ creditBalance: response.credits });
+          }
+        } catch (error) {
+          console.error("[Neural Bridge] Credit fetch failure:", error);
+        }
+      },
       
+      setCreditBalance: (amount) => set({ creditBalance: amount }),
+      setUploadedVideoUrl: (url) => set({ uploadedVideoUrl: url }),
+      setActiveJobId: (id) => set({ activeJobId: id }),
       setUploadProgress: (fileName, progress) => set((state) => ({
         uploadingAssets: { ...state.uploadingAssets, [fileName]: progress }
       })),
@@ -133,12 +168,6 @@ export const useEditorStore = create<EditorState>()(
       removeFromRetryQueue: (fileName) => set((state) => ({
         retryQueue: state.retryQueue.filter(f => f !== fileName)
       })),
-
-      setUploadedVideoUrl: (url) => set({ uploadedVideoUrl: url }),
-      setActiveJobId: (id) => set({ activeJobId: id }),
-      setTargetLang: (lang) => set({ targetLang: lang }),
-      setSelectedVoice: (voice) => set({ selectedVoice: voice }),
-      setCreditBalance: (amount) => set({ creditBalance: amount }),
 
       addAssetsToQueue: (files: File[]) => {
         files.forEach(file => {

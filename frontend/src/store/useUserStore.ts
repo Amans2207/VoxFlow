@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import apiClient from '@/utils/apiClient';
+import api from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 interface UserState {
@@ -52,10 +52,9 @@ export const useUserStore = create<UserState>()(
         set({ user: { ...currentUser, credits: optimisticCredits } });
 
         try {
-          const response: any = await apiClient.post('/api/admin/credits', {
+          const response: any = await api.post('/user/credits/deduct', {
             email: currentUser.email,
-            amount,
-            action
+            amount: action === 'deduct' ? amount : -amount
           });
           
           if (response.status === 'success') {
@@ -64,14 +63,14 @@ export const useUserStore = create<UserState>()(
         } catch (error) {
           // Rollback on failure
           set({ user: { ...currentUser, credits: previousCredits } });
-          toast.error("Credit Sync Failed. Neural Balance Rolled Back.");
+          toast.error("Neural Balance Sync Interrupted.");
         }
       },
 
       fetchUserCredits: async (email) => {
         set({ isLoading: true });
         try {
-          const response: any = await apiClient.get(`/api/user/credits?email=${email}`);
+          const response: any = await api.get(`/user/credits?email=${email}`);
           const currentUser = get().user;
           if (currentUser) {
             set({ user: { ...currentUser, credits: response.credits } });
