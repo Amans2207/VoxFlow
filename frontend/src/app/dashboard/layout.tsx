@@ -88,6 +88,20 @@ export default function DashboardLayout({
                   / {pathname.split('/').pop()?.toUpperCase() || 'CORE'}
                </h2>
             </div>
+            
+            <div className="flex items-center gap-6">
+               <div className="flex flex-col items-end">
+                  <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[2px]">Neural Balance</span>
+                  <div className="flex items-center gap-2">
+                     <span className="text-sm font-black text-white">{creditBalance?.toFixed(1) || "0.0"}</span>
+                     <Zap size={14} className="text-blue-500 animate-pulse" />
+                  </div>
+               </div>
+               <div className="w-px h-8 bg-white/5"></div>
+               <button className="p-3 bg-white/5 border border-white/10 rounded-full text-zinc-500 hover:text-white transition-all">
+                  <Shield size={18} />
+               </button>
+            </div>
          </header>
 
          <div className="flex-1 overflow-y-auto p-8">

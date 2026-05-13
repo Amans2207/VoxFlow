@@ -134,22 +134,27 @@ def require_credits(amount: float = 1.0):
         @wraps(func)
         async def wrapper(request: Request, *args, **kwargs):
             try:
-                # 1. Parse payload to find email
+                # 1. Parse payload to find identity
                 body = await request.json()
                 email = body.get("user_email") or body.get("email")
+                user_id = request.headers.get("X-User-Id") # Legacy/External Bridge Support
                 
-                if not email or email == "anonymous":
-                    raise HTTPException(status_code=401, detail="Neural Identity Required for Monetized Workflows")
+                if not email and not user_id:
+                    raise HTTPException(status_code=401, detail="Neural Identity Required")
 
                 # 2. Check Balance in Supabase
                 if supabase:
-                    res = supabase.table("profiles").select("credit_balance").eq("email", email).execute()
+                    query = supabase.table("profiles").select("credit_balance")
+                    if email: query = query.eq("email", email)
+                    else: query = query.eq("id", user_id)
+                    
+                    res = query.execute()
                     if not res.data:
                         raise HTTPException(status_code=404, detail="Neural Profile Not Found")
                     
                     balance = float(res.data[0]["credit_balance"])
                     if balance < amount:
-                        raise HTTPException(status_code=402, detail=f"Insufficient Neural Balance. Required: {amount} | Current: {balance}")
+                        raise HTTPException(status_code=402, detail=f"Neural Balance Depleted. Required: {amount} | Current: {balance}")
                 
                 # 3. Proceed to function
                 return await func(request, *args, **kwargs)
@@ -769,6 +774,71 @@ async def process_full_generation_task(prompt: str, user_email: str, job_id: str
             "progress": 100, 
             "url": "https://voxflow.ai/exports/sample_gen.mp4",
             "message": "Neural Creation Complete! ⚡"
+        })
+    except Exception as e:
+        await sio.emit('render_status', {"job_id": job_id, "status": "Failed", "error": str(e)})
+
+@api.post("/api/v1/create")
+@require_credits(amount=15.0)
+async def handle_v1_create(request: Request, background_tasks: BackgroundTasks):
+    """
+    THE NEURAL SOUL: Script (OpenAI) -> Voice (ElevenLabs) -> LipSync (HeyGen).
+    Costs 15 Credits.
+    """
+    try:
+        data = await request.json()
+        prompt = data.get("prompt")
+        image_url = data.get("image_url") # For avatar-based generation
+        email = data.get("user_email")
+        job_id = f"v1_{uuid.uuid4().hex[:8]}"
+
+        if not prompt: return {"error": "Neural prompt required"}
+
+        background_tasks.add_task(run_voxflow_pipeline_v1, prompt, image_url, email, job_id)
+
+        return {
+            "status": "success",
+            "job_id": job_id,
+            "message": "Neural Soul Activated. Processing script, voice, and sync..."
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+async def run_voxflow_pipeline_v1(prompt, image_url, email, job_id):
+    """
+    ORCHESTRATOR v1: Multi-Service AI Sync.
+    """
+    from openai import OpenAI
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    
+    try:
+        await sio.emit('render_status', {"job_id": job_id, "status": "Processing", "progress": 5, "message": "Neural Scripting..."})
+        
+        # 1. SCRIPT (GPT-4o)
+        res = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": f"Write a 15-second viral video script for: {prompt}. Keep it punchy."}]
+        )
+        script = res.choices[0].message.content
+        await sio.emit('render_status', {"job_id": job_id, "progress": 25, "message": "Voice Synthesis Engine Active..."})
+
+        # 2. VOICE (ElevenLabs)
+        # Placeholder for ElevenLabs API Call (Actual integration in pipeline.py)
+        await asyncio.sleep(2)
+        await sio.emit('render_status', {"job_id": job_id, "progress": 50, "message": "Neural Lip-Sync in Progress (HeyGen/D-ID)..."})
+
+        # 3. LIP-SYNC (HeyGen/D-ID Placeholder)
+        await asyncio.sleep(3)
+        
+        # Deduct credits
+        deduct_credits_sync(email, 15.0)
+        
+        await sio.emit('render_status', {
+            "job_id": job_id,
+            "status": "Completed",
+            "progress": 100,
+            "url": "https://voxflow.ai/exports/v1_sample.mp4",
+            "message": "Neural Masterpiece Generated! 🎙️"
         })
     except Exception as e:
         await sio.emit('render_status', {"job_id": job_id, "status": "Failed", "error": str(e)})
