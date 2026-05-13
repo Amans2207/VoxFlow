@@ -30,6 +30,8 @@ import core_engine
 
 load_dotenv()
 
+api = FastAPI(title="VoxFlow AI Production Core")
+
 def retry_with_backoff(max_retries=3, initial_delay=1):
     def decorator(func):
         @wraps(func)
@@ -120,8 +122,6 @@ async def verify_token(request: Request):
         return token
     except Exception:
         raise HTTPException(status_code=401, detail="Authentication Shield Active: Invalid Token")
-
-api = FastAPI(title="VoxFlow AI Production Core")
 
 # Rate Limit Exceeded Handler
 @api.exception_handler(RateLimitExceeded)
