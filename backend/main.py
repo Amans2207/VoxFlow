@@ -93,6 +93,15 @@ def generate_signed_url(filename: str, expiry_hours: int = 24):
 
 # Global Task Queue for Background Processing
 task_state = {} 
+render_semaphore = asyncio.Semaphore(2) # Only 2 concurrent renders allowed to prevent crashes
+
+async def queued_render_task(task_fn, *args, **kwargs):
+    """
+    Neural Queue: Limits concurrent AI processing to maintain server stability.
+    """
+    async with render_semaphore:
+        print("[Neural Queue] Processing Render Task...")
+        return await task_fn(*args, **kwargs)
 
 async def verify_token(request: Request):
     """
@@ -1078,9 +1087,11 @@ async def process_video_unified(request: Request, background_tasks: BackgroundTa
 async def get_user_projects(email: str = "anonymous"):
     return {"status": "success", "projects": []}
 
-@api.post("/api/admin/credits/update")
+@api.post("/api/admin/credits/update", dependencies=[Depends(verify_token)])
 async def admin_update_credits(req: dict):
-    """Admin God-Mode: Manually override credit balance"""
+    """
+    Admin God-View: Manually inject credits into any user account.
+    """
     email = req.get("email")
     new_amount = req.get("amount")
     
@@ -1089,9 +1100,29 @@ async def admin_update_credits(req: dict):
         
     try:
         supabase.table("profiles").update({"credit_balance": new_amount}).eq("email", email).execute()
+        log_system_event("ADMIN_CREDIT_INJECTION", f"Admin set {email} balance to {new_amount}")
         return {"status": "success", "message": f"Updated {email} to {new_amount} credits"}
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
+
+@api.get("/api/admin/stats", dependencies=[Depends(verify_token)])
+async def get_admin_stats():
+    """
+    Admin God-View: Aggregate system stats.
+    """
+    try:
+        users_res = supabase.table("profiles").select("id", count="exact").execute()
+        tasks_res = supabase.table("tasks").select("id", count="exact").eq("status", "completed").execute()
+        
+        return {
+            "total_users": users_res.count,
+            "total_videos_generated": tasks_res.count,
+            "system_health": "100%",
+            "lpu_status": "optimizing"
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": str(e)})
+
 
 @api.post("/api/user/daily_bonus")
 async def claim_daily_bonus(req: dict):
@@ -1137,26 +1168,61 @@ async def process_video_route(req: dict, background_tasks: BackgroundTasks):
         print(f"[Cache] Neural Hit! Serving cached result for {cache_key}")
         return neural_cache[cache_key]
 
-    # 1. Credit Check (5 Credits)
-    if not deduct_credits_sync(email, 5.0):
-        return JSONResponse(status_code=402, content={"status": "error", "message": "Insufficient Balance"})
+    # 1. Credit Check (Video = 10 Credits)
+    if not deduct_credits_sync(email, 10.0):
+        return JSONResponse(status_code=402, content={"status": "error", "message": "Insufficient Balance. Video Generation requires 10 Credits."})
 
-    # 2. Dispatch Render
+
+    # 2. Dispatch Render (via Queued Engine)
     job_id = f"gen_{uuid.uuid4().hex[:8]}"
     filename = f"{job_id}.mp4"
     output_path = f"exports/{filename}"
     
-    background_tasks.add_task(generate_video_ffmpeg, audio_path, image_path, output_path)
+    # 3. Create Task Record in Supabase
+    try:
+        user_id_res = supabase.table("profiles").select("id").eq("email", email).single().execute()
+        user_id = user_id_res.data.get("id") if user_id_res.data else None
+        
+        task_res = supabase.table("tasks").insert({
+            "user_id": user_id,
+            "status": "processing",
+            "task_type": "video_generation",
+            "input_params": req
+        }).execute()
+        db_task_id = task_res.data[0]["id"] if task_res.data else None
+    except Exception as e:
+        print(f"[DB] Failed to create task record: {e}")
+        db_task_id = None
+
+    # Wrap in concurrency control + Cloud Upload
+    async def render_and_upload(path, fname, tid):
+        await generate_video_ffmpeg(audio_path, image_path, path)
+        
+        # Cloud Sync
+        from utils.cloud_storage import upload_to_cloud
+        cloud_url = upload_to_cloud(path, public_id=fname.split('.')[0])
+        
+        if tid:
+            supabase.table("tasks").update({
+                "status": "completed" if cloud_url else "failed",
+                "output_url": cloud_url or f"/exports/{fname}",
+                "completed_at": datetime.datetime.utcnow().isoformat()
+            }).eq("id", tid).execute()
+        
+        log_system_event("VIDEO_GEN_COMPLETED", f"Job {job_id} uploaded to Cloud", {"url": cloud_url})
+
+    background_tasks.add_task(queued_render_task, render_and_upload, output_path, filename, db_task_id)
     
-    # 3. Log Job Creation
+    # 4. Log Job Creation
     log_system_event("VIDEO_GEN_STARTED", f"Job {job_id} for {email}", {"email": email, "job_id": job_id})
     
-    # 4. Generate Signed URL for Result
+    # 5. Generate Signed URL (Fallback)
     token = generate_signed_url(filename)
     result = {
         "status": "success", 
         "job_id": job_id,
-        "message": "Render Dispatched",
+        "db_id": db_task_id,
+        "message": "Render Dispatched & Cloud Sync Initialized",
         "video_url": f"/exports/{filename}?token={token}"
     }
     

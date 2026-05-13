@@ -116,8 +116,9 @@ export default function DashboardLayout({
       items: [
         { name: 'DASHBOARD', icon: <Monitor size={18} />, href: '/dashboard' },
         { name: 'AI STUDIO', icon: <Zap size={18} />, href: '/dashboard/ai-studio' },
-        { name: 'PRECISION', icon: <Scissors size={18} />, href: '/dashboard/precision-studio' },
         { name: 'HISTORY', icon: <History size={18} />, href: '/dashboard/history' },
+        { name: 'FUEL', icon: <CreditCard size={18} />, href: '/dashboard/pricing' },
+        { name: 'CORE', icon: <Shield size={18} />, href: '/dashboard/admin_vxf' },
       ]
     },
     {
