@@ -1,33 +1,55 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { updateSession } from './utils/supabase/middleware';
 
 /**
- * TITAN-X PRODUCTION MIDDLEWARE
- * Protects administrative nodes and ensures identity-aware routing.
+ * TITAN-X UNIFIED MIDDLEWARE (PROD-READY)
+ * Merged logic for Supabase Auth, NextAuth Identity, and Admin Shield.
  */
-export async function middleware(req: NextRequest) {
-  const path = req.nextUrl.pathname;
+export async function middleware(request: NextRequest) {
+  // 1. Supabase Session Management (Neural Bridge)
+  // This ensures the user's Supabase session is refreshed on every request
+  const supabaseResponse = await updateSession(request);
+  const { pathname } = request.nextUrl;
 
-  // 1. Define Protected Admin Path
-  const isAdminPath = path.startsWith('/dashboard/admin_vxf');
-
-  if (isAdminPath) {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  // 2. NextAuth Identity & Admin Protection
+  // Protects the /dashboard/admin_vxf administrative vault
+  if (pathname.startsWith('/dashboard/admin_vxf')) {
+    const token = await getToken({ 
+      req: request, 
+      secret: process.env.NEXTAUTH_SECRET 
+    });
     
-    // STRICT ADMIN LOCK: Only allow specific email
     const ADMIN_EMAIL = 'admin@voxflow.ai';
     
     if (!token || token.email !== ADMIN_EMAIL) {
-      console.warn(`[Security] Unauthorized access attempt to ${path} by ${token?.email || 'Anonymous'}`);
-      return NextResponse.redirect(new URL('/dashboard', req.url));
+      console.warn(`[Security] Unauthorized access attempt to ${pathname} by ${token?.email || 'Anonymous'}`);
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 
-  return NextResponse.next();
+  // 3. Legacy Admin Route Protection (from proxy.ts)
+  if (pathname.startsWith('/admin')) {
+    const adminAuth = request.cookies.get('vxf_admin_auth')?.value;
+    if (pathname !== '/admin_login' && adminAuth !== 'verified') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/admin_login';
+      return NextResponse.redirect(url);
+    }
+  }
+
+  return supabaseResponse;
 }
 
-// Ensure middleware only runs on relevant paths
 export const config = {
-  matcher: ['/dashboard/:path*'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - Public assets (svg, png, jpg, etc)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };
