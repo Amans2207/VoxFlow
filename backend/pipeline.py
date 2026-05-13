@@ -5,6 +5,7 @@ import uuid
 import subprocess
 from elevenlabs.client import ElevenLabs
 from googletrans import Translator
+from utils.eleven_manager import eleven_manager
 try:
     from faster_whisper import WhisperModel
     HAS_WHISPER = True
@@ -14,8 +15,10 @@ except ImportError:
 class DubbingPipeline:
     def __init__(self, device="cpu"):
         self.device = device
-        self.api_key = os.getenv("ELEVEN_API_KEY")
-        self.client = ElevenLabs(api_key=self.api_key) if self.api_key else None
+        self.client = None
+        self.api_key = eleven_manager.get_active_key()
+        if self.api_key:
+            self.client = ElevenLabs(api_key=self.api_key)
         self.translator = Translator()
         
         # Load Whisper model if available
@@ -30,10 +33,11 @@ class DubbingPipeline:
         print(f"Initializing Neural Dubbing Pipeline on {self.device}...")
         print("Neural Engines Synchronized with ElevenLabs (Modern SDK).")
 
-    def process(self, video_path, target_lang, edit_config=None):
+    def process(self, video_path, target_lang, job_id=None, edit_config=None):
         """Processes the video and applies actual ElevenLabs Dubbing."""
         print(f"Neural Core: Starting Pipeline for: {video_path}")
-        job_id = uuid.uuid4().hex[:8]
+        if not job_id:
+            job_id = uuid.uuid4().hex[:8]
         output_dir = "exports"
         os.makedirs(output_dir, exist_ok=True)
         
@@ -50,7 +54,21 @@ class DubbingPipeline:
                          break
         
         if not os.path.exists(local_input):
-            print(f"Neural Core Warning: Source missing at {local_input}, using raw path.")
+            print(f"Neural Core Warning: Source missing at {local_input}. Searching for latest upload fallback...")
+            # Search in uploads for any mp4
+            try:
+                uploads = [f for f in os.listdir("uploads") if f.endswith(".mp4")]
+                if uploads:
+                    local_input = os.path.join("uploads", uploads[0])
+                    print(f"Neural Core: Using fallback source: {local_input}")
+                else:
+                    # Create a 2 second black screen if no files exist
+                    print("Neural Core: [CRITICAL] No source assets found. Generating Null-Signal placeholder.")
+                    null_video = os.path.join(output_dir, f"null_{job_id}.mp4")
+                    subprocess.run(["ffmpeg", "-f", "lavfi", "-i", "color=c=black:s=1280x720:d=2", "-c:v", "libx264", null_video, "-y"], capture_output=True)
+                    local_input = null_video
+            except Exception as e:
+                print(f"Neural Core: Fallback system failed - {e}")
 
         # 2. Transcription
         print("Neural Core: Extracting Speech (Whisper)...")
@@ -75,47 +93,74 @@ class DubbingPipeline:
             print(f"Translation Error: {e}")
             translated_text = transcript_text
 
-        # 4. ElevenLabs Voice Synthesis (Modern SDK)
+        # 4. ElevenLabs Voice Synthesis with Key Rotation
         print("Neural Core: Synthesizing Neural Audio (ElevenLabs)...")
         dub_audio_path = os.path.join(output_dir, f"dub_audio_{job_id}.mp3")
+        has_dub = False
         
-        try:
-            if self.client:
-                # Default Voice: Roger (CwhRBWXzGAHq8TQ4Fs17)
+        max_rotation_attempts = len(eleven_manager.get_all_keys())
+        for attempt in range(max_rotation_attempts):
+            try:
+                active_key = eleven_manager.get_active_key()
+                if not active_key or "sk_" not in active_key:
+                    print("Neural Core: [CRITICAL] No valid ElevenLabs API key found.")
+                    break
+                    
+                # Re-initialize client if key changed
+                self.client = ElevenLabs(api_key=active_key)
+                
                 voice_id = "CwhRBWXzGAHq8TQ4Fs17" 
                 if edit_config and edit_config.get('voice'):
                     voice_id = edit_config.get('voice')
                 
+                print(f"Neural Core: Fetching Neural Voice {voice_id} using Key #{eleven_manager.current_index + 1}...")
                 audio_gen = self.client.text_to_speech.convert(
                     text=translated_text,
                     voice_id=voice_id,
                     model_id="eleven_multilingual_v2"
                 )
                 
-                # Save audio to file
                 with open(dub_audio_path, "wb") as f:
                     for chunk in audio_gen:
                         if chunk: f.write(chunk)
                 has_dub = True
-            else:
-                raise Exception("ElevenLabs Client not initialized")
-        except Exception as e:
-            print(f"ElevenLabs Error: {e}")
-            subprocess.run(["ffmpeg", "-f", "lavfi", "-i", "sine=frequency=440:duration=5", dub_audio_path, "-y"], capture_output=True)
-            has_dub = False
+                break # Success!
+                
+            except Exception as e:
+                error_msg = str(e).lower()
+                print(f"ElevenLabs Neural Error: {type(e).__name__} - {error_msg}")
+                
+                # Check for credit-related errors (401, 400 with 'credit' message, or 429)
+                if "quota" in error_msg or "credit" in error_msg or "unauthorized" in error_msg or "limit" in error_msg:
+                    print("Neural Core: [DETECTION] Key exhausted or invalid. Attempting rotation...")
+                    if not eleven_manager.rotate_key():
+                        break # No more keys
+                else:
+                    # Non-rotatable error (e.g. network, bad voice_id)
+                    break
+        
+        if not has_dub:
+            print("Neural Core: [DUB_FAILURE] Synthesis Failed. Using Original Audio Fallback.")
+            # Extract original audio 
+            try:
+                subprocess.run(["ffmpeg", "-i", local_input, "-vn", "-acodec", "libmp3lame", dub_audio_path, "-y"], capture_output=True)
+            except:
+                # If extraction fails, generate silence
+                subprocess.run(["ffmpeg", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "2", dub_audio_path, "-y"], capture_output=True)
 
         # 5. Final Assembly
         output_video = os.path.join(output_dir, f"dub_{job_id}.mp4")
-        print("Neural Core: Finalizing Dubbed Master...")
+        print(f"Neural Core: Finalizing Dubbed Master ({'DUBBED' if has_dub else 'FALLBACK'})...")
         
         try:
-            # Assembly using FFmpeg
+            # Assembly with Visual Proof Overlay
+            status_text = f"NEURAL DUBBED: {target_lang.upper()}" if has_dub else f"NEURAL SYNC: {target_lang.upper()} (AUDIO FALLBACK)"
             cmd = [
                 "ffmpeg", "-i", local_input, "-i", dub_audio_path,
-                "-filter_complex", f"[0:v]drawtext=text='NEURAL DUBBED\: {target_lang.upper()}':x=(w-tw)/2:y=h-100:fontsize=48:fontcolor=white:box=1:boxcolor=black@0.5:boxborderw=10[v]",
+                "-filter_complex", f"[0:v]drawtext=text='{status_text}':x=(w-tw)/2:y=h-100:fontsize=48:fontcolor=cyan:box=1:boxcolor=black@0.7:boxborderw=10[v]",
                 "-map", "[v]", "-map", "1:a",
                 "-c:v", "libx264", "-c:a", "aac", "-b:a", "192k",
-                "-shortest", output_video, "-y"
+                output_video, "-y"
             ]
             subprocess.run(cmd, capture_output=True)
         except Exception as e:

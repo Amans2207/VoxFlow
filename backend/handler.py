@@ -1,91 +1,58 @@
-import os
-import uuid
 import runpod
-import shutil
+import os
+import sys
+import uuid
 import requests
+
+# Add backend to path so we can import the pipeline
+sys.path.append(os.path.join(os.getcwd(), 'backend'))
 from pipeline import DubbingPipeline
-from editor import VideoEditor
-
-# Initialize Engines Globally for cold-start efficiency
-print("🚀 Neural Core: Initializing Serverless Engines...")
-pipeline = DubbingPipeline(device="cpu")
-editor = VideoEditor()
-
-def download_file(url):
-    """Helper to download remote assets for processing."""
-    local_filename = f"/tmp/{uuid.uuid4().hex}_{url.split('/')[-1]}"
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
-        with open(local_filename, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
-    return local_filename
 
 def handler(job):
     """
-    Main RunPod Serverless Handler
-    Input format:
-    {
-        "type": "dub" | "studio",
-        "input_url": "https://...",
-        "target_lang": "hi",
-        "voice": "Bella",
-        "config": { ... }
-    }
+    The main handler function for RunPod Serverless.
+    Expected input: { "video_url": "...", "target_lang": "..." }
     """
-    job_input = job["input"]
-    job_type = job_input.get("type", "dub")
-    input_url = job_input.get("input_url")
+    job_input = job['input']
+    video_url = job_input.get("video_url")
+    target_lang = job_input.get("target_lang", "hindi")
     
-    if not input_url:
-        return {"error": "Missing input_url"}
+    if not video_url:
+        return {"error": "No video_url provided"}
 
-    print(f"📦 Processing {job_type} job for {input_url}")
+    print(f"Starting RunPod Job {job['id']} for {video_url}")
     
-    local_input = ""
+    # 1. Download video
+    local_input = f"/tmp/{uuid.uuid4().hex}.mp4"
     try:
-        # 1. Download asset
-        local_input = download_file(input_url)
-        
-        # 2. Process based on type
-        if job_type == "dub":
-            target_lang = job_input.get("target_lang", "hi")
-            edit_config = job_input.get("config", {"voice": job_input.get("voice", "Bella")})
-            
-            output_video, license_file = pipeline.process(local_input, target_lang, edit_config)
-            
-        elif job_type == "studio":
-            render_data = job_input.get("config", {})
-            render_data['video_url'] = local_input
-            output_video = editor.export_project(render_data)
-        
-        else:
-            return {"error": "Unknown job type"}
-
-        # 3. Handle Output
-        # NOTE: Since this is serverless, you should upload the result to S3/Supabase.
-        # For now, we return the local path (which won't work for the user unless they have persistent storage)
-        # In production, add your S3 upload logic here.
-        
-        final_filename = os.path.basename(output_video)
-        print(f"✅ Success! Output ready: {final_filename}")
-        
-        # Mocking an S3 URL for demonstration
-        # In a real setup, replace this with your actual upload code.
-        return {
-            "status": "completed",
-            "output_video": output_video, 
-            "message": "Processing complete. Please ensure you have an upload hook configured for permanent storage."
-        }
-
+        response = requests.get(video_url, stream=True)
+        with open(local_input, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
-        return {"error": str(e)}
-    
+        return {"error": f"Failed to download video: {str(e)}"}
+
+    # 2. Run Pipeline
+    try:
+        # We use CPU by default in handler if CUDA is not detected, 
+        # but RunPod will have CUDA.
+        pipeline = DubbingPipeline(device="cuda")
+        output_path, _ = pipeline.process(local_input, target_lang)
+        
+        # 3. Upload Result (For RunPod, you usually return a URL to S3/Supabase)
+        # For now, we return the local path or simulate success
+        return {
+            "status": "success",
+            "job_id": job['id'],
+            "output_video_path": output_path,
+            "target_lang": target_lang
+        }
+    except Exception as e:
+        return {"error": f"Pipeline Crash: {str(e)}"}
     finally:
-        # Cleanup temporary files
-        if local_input and os.path.exists(local_input):
+        # Cleanup
+        if os.path.exists(local_input):
             os.remove(local_input)
 
-# Start the Serverless Handler
-runpod.serverless.start({"handler": handler})
+if __name__ == "__main__":
+    runpod.serverless.start({"handler": handler})

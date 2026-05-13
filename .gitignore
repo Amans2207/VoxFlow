@@ -1,34 +1,35 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-venv/
-.venv/
-env/
-.env
+# Backend
+backend/__pycache__/
+backend/*.py[cod]
+backend/venv/
+backend/.venv/
+backend/env/
+backend/.env
+backend/uploads/
+backend/exports/
+backend/user_voices/
 
-# Node
-node_modules/
-dist/
-.next/
-out/
-build/
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/dist/
+frontend/out/
+frontend/build/
+frontend/.env*
 
-# VoxFlow specific
-uploads/
-exports/
-user_voices/
+# VoxFlow Media & Data
 *.mp4
 *.mp3
 *.wav
 *.json
-!trending.json
-!.runpod/*.json
-!package.json
-!tsconfig.json
+!backend/trending.json
+!backend/templates.json
+!frontend/package.json
+!frontend/tsconfig.json
 
-# IDE
+# IDE & Misc
 .vscode/
 .idea/
 *.swp
 *.swo
+.DS_Store

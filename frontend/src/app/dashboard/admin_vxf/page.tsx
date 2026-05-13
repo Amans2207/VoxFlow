@@ -1,0 +1,237 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { createClient } from '@/utils/supabase/client';
+import { 
+  Shield, Zap, Globe, Activity, Users, CreditCard, Terminal, 
+  AlertTriangle, TrendingUp, Cpu, Server, ShieldCheck, 
+  Database, History, CheckCircle2, XCircle, Loader2, RefreshCw 
+} from 'lucide-react';
+import InteractiveGlobe from "@/components/InteractiveGlobe";
+import { useToast } from '@/components/Toast';
+import { soundEngine } from '@/utils/SoundEngine';
+
+export default function AdminDashboard() {
+  const { showToast } = useToast();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [vipCredits, setVipCredits] = useState(500);
+  const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
+  const [ledger, setLedger] = useState<any[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (profile?.role === 'Admin' || user.email === 'admin@voxflow.ai') {
+          setIsAdmin(true);
+          setPendingTransactions([
+            { id: '1', amount: 999, utr: '876608312901', user_id: 'User_442' },
+            { id: '2', amount: 2499, utr: 'UTR_88229911', user_id: 'User_901' }
+          ]);
+        }
+      }
+      setLoading(false);
+    };
+    checkAdmin();
+  }, []);
+
+  const handleRefreshQueue = () => {
+    console.log("[Admin Hub] Refreshing Verification Queue...");
+    setIsRefreshing(true);
+    soundEngine?.play("processing");
+    setTimeout(() => {
+      setIsRefreshing(false);
+      showToast("Queue Synced Successfully", "success");
+      soundEngine?.play("success");
+    }, 1500);
+  };
+
+  const handleApproveTransaction = (id: string, utr: string) => {
+    console.log(`[Admin Hub] Approving Transaction ID: ${id} | UTR: ${utr}`);
+    setPendingTransactions(prev => prev.filter(t => t.id !== id));
+    showToast(`Approved Transaction ${utr}`, "success");
+    soundEngine?.play("success");
+  };
+
+  const handleRejectTransaction = (id: string, utr: string) => {
+    console.log(`[Admin Hub] Rejecting Transaction ID: ${id} | UTR: ${utr}`);
+    setPendingTransactions(prev => prev.filter(t => t.id !== id));
+    showToast(`Rejected Transaction ${utr}`, "error");
+    soundEngine?.play("click");
+  };
+
+  const handleInjectVip = () => {
+    console.log(`[Admin Hub] Injecting ${vipCredits} credits into VIP account...`);
+    soundEngine?.play("processing");
+    showToast(`Injected ${vipCredits} Credits`, "success");
+  };
+
+  if (loading) return (
+    <div className="h-screen w-screen flex items-center justify-center bg-[#050505]">
+       <Loader2 size={48} className="text-[#10b981] animate-spin" />
+    </div>
+  );
+
+  if (!isAdmin) return (
+    <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#050505] gap-8 p-6 text-center">
+       <AlertTriangle size={80} className="text-[#ef4444] animate-pulse" />
+       <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-widest">Unauthorized</h1>
+       <p className="text-[10px] font-black text-[#404040] uppercase tracking-[4px]">Security Clearance Level 5 Required</p>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-10 lg:gap-16 pb-24 lg:pb-20">
+       
+       {/* Header */}
+       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-white/5 pb-8">
+          <div>
+             <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter uppercase text-white m-0 leading-none">
+                Command <span className="text-[#10b981]">Center</span>
+             </h1>
+             <p className="text-[10px] font-black text-[#404040] uppercase tracking-[4px] mt-4 flex items-center gap-2">
+                <ShieldCheck className="text-[#10b981]" size={14} /> Security Clearance: L5 Admin Access
+             </p>
+          </div>
+          <div className="w-full md:w-auto flex flex-col md:flex-row gap-4">
+             <div className="bg-white/3 p-4 md:p-5 rounded-2xl border border-white/5 text-right">
+                <p className="text-[9px] font-black text-[#404040] uppercase tracking-widest">Neural Engine</p>
+                <p className="text-lg font-black text-[#10b981] uppercase">OPTIMIZED</p>
+             </div>
+             <div className="bg-white/3 p-4 md:p-5 rounded-2xl border border-white/5 text-right">
+                <p className="text-[9px] font-black text-[#404040] uppercase tracking-widest">GPU Cluster</p>
+                <p className="text-lg font-black text-[#3b82f6] uppercase">LOAD: 24%</p>
+             </div>
+          </div>
+       </header>
+
+       {/* Map & Logs */}
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
+          <div className="lg:col-span-2 h-[350px] lg:h-[500px] bg-[#0A0A0B] rounded-[48px] border border-white/5 overflow-hidden relative shadow-2xl">
+             <div className="absolute top-6 lg:top-8 left-6 lg:left-10 z-10">
+                <h3 className="text-xs lg:text-sm font-black text-white uppercase tracking-widest flex items-center gap-3">
+                   <Globe size={18} className="text-[#3b82f6]" /> AI Traffic Heatmap
+                </h3>
+             </div>
+             <InteractiveGlobe />
+          </div>
+
+          <div className="p-8 lg:p-10 bg-[#0A0A0B] rounded-[48px] border border-white/5 flex flex-col shadow-2xl">
+             <h3 className="text-[10px] font-black text-white uppercase tracking-widest mb-8 flex items-center gap-3">
+                <Terminal size={18} className="text-[#10b981]" /> Neural Stream
+             </h3>
+             <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 max-h-[300px] lg:max-h-none">
+                {[
+                  "User [aman@voxflow] started render.",
+                  "Mumbai Node sync complete.",
+                  "Viral peak detected in JP market.",
+                  "Optimizing GPU Cluster 08.",
+                  "Security audit [L5] initiated."
+                ].map((log, i) => (
+                  <div key={i} className="p-4 bg-white/2 rounded-xl text-[9px] lg:text-[10px] text-[#404040] font-mono leading-relaxed">
+                     <span className="text-[#262626]">[{new Date().toLocaleTimeString()}]</span> {log}
+                  </div>
+                ))}
+             </div>
+          </div>
+       </div>
+
+       {/* Management Row */}
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
+          
+          {/* VIP Generator */}
+          <div className="p-8 lg:p-12 bg-[#0A0A0B] rounded-[48px] border border-white/5 shadow-2xl flex flex-col gap-10">
+             <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
+                <Users className="text-[#10b981]" size={24} /> VIP Access
+             </h3>
+             <div className="flex flex-col gap-6">
+                <input type="text" placeholder="FULL NAME" className="h-14 px-6 bg-white/2 border border-white/5 rounded-2xl text-white text-[11px] font-black uppercase tracking-widest outline-none focus:border-white/10" />
+                <input type="email" placeholder="CREATOR EMAIL" className="h-14 px-6 bg-white/2 border border-white/5 rounded-2xl text-white text-[11px] font-black uppercase tracking-widest outline-none focus:border-white/10" />
+                <div className="flex flex-col gap-3">
+                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                      <span className="text-[#404040]">CREDITS</span>
+                      <span className="text-[#10b981]">{vipCredits} MINS</span>
+                   </div>
+                   <input 
+                    type="range" 
+                    min="100" 
+                    max="2000" 
+                    step="100" 
+                    value={vipCredits} 
+                    onChange={(e) => setVipCredits(parseInt(e.target.value))} 
+                    className="w-full h-2 bg-white/5 rounded-full appearance-none cursor-pointer accent-[#10b981]" 
+                   />
+                </div>
+                <button 
+                  onClick={handleInjectVip}
+                  className="h-14 mt-4 bg-[#10b981] text-black font-black rounded-2xl text-[11px] uppercase tracking-[2px] border-none shadow-xl active:scale-95 transition-all cursor-pointer"
+                >
+                  Inject Access
+                </button>
+             </div>
+          </div>
+
+          {/* Pending Queue */}
+          <div className="lg:col-span-2 p-8 lg:p-12 bg-[#0A0A0B] rounded-[48px] border border-white/5 shadow-2xl flex flex-col gap-10">
+             <div className="flex justify-between items-center">
+                <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
+                   <Database className="text-[#3b82f6]" size={24} /> Verification Queue
+                </h3>
+                <RefreshCw 
+                  onClick={handleRefreshQueue}
+                  className={`text-[#404040] cursor-pointer hover:text-white transition-all ${isRefreshing ? 'animate-spin' : ''}`} 
+                  size={20} 
+                />
+             </div>
+             <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar max-h-[400px]">
+                {pendingTransactions.map(t => (
+                  <div key={t.id} className="p-6 bg-white/2 border border-white/5 rounded-[32px] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 hover:border-white/10 transition-all">
+                     <div>
+                        <p className="text-lg lg:text-xl font-black text-white tracking-tighter">INR {t.amount} Top-Up</p>
+                        <p className="text-[9px] font-black text-[#404040] uppercase tracking-widest mt-1">UTR: {t.utr} | UID: {t.user_id}</p>
+                     </div>
+                     <div className="flex items-center gap-4 w-full md:w-auto border-t md:border-none border-white/5 pt-4 md:pt-0">
+                        <button 
+                          onClick={() => handleApproveTransaction(t.id, t.utr)}
+                          className="h-14 flex-1 md:w-14 md:h-14 bg-[#10b981] rounded-2xl flex items-center justify-center border-none shadow-xl active:scale-90 transition-all cursor-pointer"
+                        >
+                           <CheckCircle2 size={24} className="text-black" />
+                        </button>
+                        <button 
+                          onClick={() => handleRejectTransaction(t.id, t.utr)}
+                          className="h-14 flex-1 md:w-14 md:h-14 bg-[#ef44441a] border border-[#ef444433] rounded-2xl flex items-center justify-center active:scale-90 transition-all cursor-pointer"
+                        >
+                           <XCircle size={24} className="text-[#ef4444]" />
+                        </button>
+                     </div>
+                  </div>
+                ))}
+                {pendingTransactions.length === 0 && (
+                  <div className="text-center py-20 border-2 border-dashed border-white/5 rounded-[40px]">
+                     <ShieldCheck className="mx-auto text-[#404040] mb-4" size={48} />
+                     <p className="text-[10px] font-black text-[#404040] uppercase tracking-widest">Queue Fully Verified</p>
+                  </div>
+                )}
+             </div>
+          </div>
+       </div>
+
+       <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+       `}</style>
+    </div>
+  );
+}

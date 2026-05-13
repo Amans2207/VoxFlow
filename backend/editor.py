@@ -19,31 +19,39 @@ except:
             return MockResults()
     mp_face_detection = type('obj', (object,), {'FaceDetection': MockFaceDetection})
 import numpy as np
-from moviepy import VideoFileClip, concatenate_videoclips, ColorClip, CompositeVideoClip, TextClip, vfx
+from moviepy.editor import VideoFileClip, concatenate_videoclips, ColorClip, CompositeVideoClip, TextClip, vfx
 from elevenlabs.client import ElevenLabs
+from utils.eleven_manager import eleven_manager
 
 class VideoEditor:
     def __init__(self):
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.watermark_path = os.path.join(self.base_dir, "watermark.png")
+        print(f"[Neural Engine] Initialized. Watermark Source: {self.watermark_path}")
         self.face_detection = mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5)
 
-    def export_project(self, render_data):
+    def export_project(self, render_data, is_pro=False):
         """Processes AI Studio config or tracks and exports final video."""
-        project_id = render_data.get('project_id', 'unknown')
-        print(f"Initializing Neural Export for Project: {project_id}")
-        
+        project_id = render_data.get('project_id', str(uuid.uuid4()))
+        user_email = render_data.get('user_email', 'anonymous')
+        print(f"[Pipeline] START: Project {project_id} | User: {user_email}")
+
         video_urls = render_data.get('video_urls', [])
-        if not video_urls and render_data.get('video_url'):
-            video_urls = [render_data.get('video_url')]
+        if not video_urls and render_data.get('config', {}).get('video_url'):
+            video_urls = [render_data.get('config', {}).get('video_url')]
             
         if not video_urls:
+            print(f"[Pipeline] ERROR: No source videos found for project {project_id}")
             raise ValueError("No source video URLs provided for export.")
+
+        print(f"[Pipeline] [1/4] INITIALIZING Asset Queue ({len(video_urls)} clips)")
 
         # Ensure temp directory exists
         temp_dir = os.path.join(os.getcwd(), "temp_synthesis")
         os.makedirs(temp_dir, exist_ok=True)
         os.makedirs("exports", exist_ok=True)
 
-        output_path = f"exports/render_{uuid.uuid4().hex[:8]}.mp4"
+        output_path = f"exports/render_{project_id}.mp4"
         clips = []
 
         try:
@@ -61,6 +69,7 @@ class VideoEditor:
             if not clips: raise Exception("No valid clips")
 
             # 1. Smart Assembly & Resizing
+            print(f"[Pipeline] [2/4] ACTIVATING Neural Synthesis & Scaling...")
             final_clip = concatenate_videoclips(clips, method="compose")
             
             target_ratio = render_data.get('aspect_ratio', '16:9')
@@ -92,17 +101,39 @@ class VideoEditor:
                 # In real scenario, add TextClips here
             
             final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac", fps=24, logger=None)
+
+            if not is_pro:
+                print("Non-Pro User Detected: Injecting Neural Watermark...")
+                # Add watermark overlay using ffmpeg directly for performance
+                watermarked_path = output_path.replace(".mp4", "_wm.mp4")
+                wm_file = os.path.join(os.path.dirname(__file__), "watermark.png")
+                if os.path.exists(wm_file):
+                    # Overlay bottom-right with 20px padding, 30% opacity
+                    wm_cmd = f"ffmpeg -i {output_path} -i {wm_file} -filter_complex \"[1:v]scale=200:-1,format=rgba,colorchannelmixer=aa=0.3[wm];[0:v][wm]overlay=main_w-overlay_w-20:main_h-overlay_h-20\" -c:a copy {watermarked_path} -y"
+                    try:
+                        os.system(wm_cmd)
+                        if os.path.exists(watermarked_path):
+                            os.replace(watermarked_path, output_path)
+                    except Exception as wm_err:
+                        print(f"[Neural Engine] Watermark Injection Failed (Skipping): {wm_err}")
+                else:
+                    print(f"[Neural Engine] Watermark Source Missing ({wm_file}): Skipping injection.")
+            
             return output_path
-        finally:
-            for c in clips: c.close()
-            clip.close()
         except Exception as e:
             print(f"Rendering Error: {e}")
-            # Fallback to copy if moviepy fails (better than nothing)
-            shutil.copy(local_input_path, output_path)
-        
-        if is_temp and os.path.exists(local_input_path): 
-            os.remove(local_input_path)
+            # Fallback to a simple copy of the first clip if everything fails
+            if clips:
+                try: shutil.copy(video_urls[0], output_path)
+                except: pass
+            raise e
+        finally:
+            for c in clips:
+                try: c.close()
+                except: pass
+            if 'final_clip' in locals():
+                try: final_clip.close()
+                except: pass
              
         return output_path
 
@@ -320,16 +351,22 @@ class VideoEditor:
             
             if not clips: raise Exception("No clips for AI assembly")
             
-            # Smart Beat Sync Simulation
-            final_clip = concatenate_videoclips(clips, method="compose")
+            # 4. Neural Watermarking (Tier-Based)
+            print(f"[Pipeline] [3/4] APPLYING Neural Watermark (is_pro: {is_pro})")
+            if not is_pro:
+                print(f"[Pipeline] Overlaying watermark: {self.watermark_path}")
+                logo = (ImageClip(self.watermark_path)
+                       .set_duration(final_clip.duration)
+                       .resize(height=60) 
+                       .margin(right=20, bottom=20, opacity=0)
+                       .set_pos(("right","bottom")))
+                final_clip = CompositeVideoClip([final_clip, logo])
             
-            # Apply Random Marketplace Effects
-            effects = [vfx.mirror_x, vfx.invert_colors, lambda c: c.fx(vfx.colorx, 1.5)]
-            import random
-            lucky_effect = random.choice(effects)
-            final_clip = lucky_effect(final_clip)
+            # 5. Final Export
+            print(f"[Pipeline] [4/4] EXPORTING Final Render...")
+            final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
+            print(f"[Pipeline] SUCCESS: Exported to {output_path}")
             
-            final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac", fps=24, logger=None)
             return output_path
         finally:
             for c in clips: c.close()
@@ -535,29 +572,43 @@ class IncrementalRenderer:
 
     def generate_neural_dub(self, text, voice_id="CwhRBWXzGAHq8TQ4Fs17"):
         """
-        Direct ElevenLabs integration for professional dubbing.
+        Direct ElevenLabs integration for professional dubbing with Key Rotation.
         """
-        api_key = os.getenv("ELEVEN_API_KEY")
-        if not api_key:
-             return self.generate_f5_dub_fallback(text)
-             
-        client = ElevenLabs(api_key=api_key)
         output_path = f"exports/dub_{uuid.uuid4().hex[:8]}.mp3"
         os.makedirs("exports", exist_ok=True)
         
-        try:
-            audio_gen = client.text_to_speech.convert(
-                text=text,
-                voice_id=voice_id,
-                model_id="eleven_multilingual_v2"
-            )
-            with open(output_path, "wb") as f:
-                for chunk in audio_gen:
-                    if chunk: f.write(chunk)
-            return output_path
-        except Exception as e:
-            print(f"ElevenLabs Error: {e}")
-            return self.generate_f5_dub_fallback(text)
+        max_rotation_attempts = len(eleven_manager.get_all_keys())
+        for attempt in range(max_rotation_attempts):
+            try:
+                active_key = eleven_manager.get_active_key()
+                if not active_key:
+                     return self.generate_f5_dub_fallback(text)
+                     
+                client = ElevenLabs(api_key=active_key)
+                print(f"[Neural Studio] Synthesizing Voice {voice_id} using Key #{eleven_manager.current_index + 1}...")
+                
+                audio_gen = client.text_to_speech.convert(
+                    text=text,
+                    voice_id=voice_id,
+                    model_id="eleven_multilingual_v2"
+                )
+                with open(output_path, "wb") as f:
+                    for chunk in audio_gen:
+                        if chunk: f.write(chunk)
+                return output_path
+                
+            except Exception as e:
+                error_msg = str(e).lower()
+                print(f"[Neural Studio] ElevenLabs Error: {error_msg}")
+                
+                if "quota" in error_msg or "credit" in error_msg or "unauthorized" in error_msg or "limit" in error_msg:
+                    print("[Neural Studio] Key exhausted. Rotating...")
+                    if not eleven_manager.rotate_key():
+                        break
+                else:
+                    break
+                    
+        return self.generate_f5_dub_fallback(text)
 
     def generate_f5_dub_fallback(self, text):
         output_path = f"f5_dub_{uuid.uuid4().hex[:8]}.wav"
