@@ -15,6 +15,7 @@ interface State {
 /**
  * NEURAL ERROR BOUNDARY
  * Prevents the entire Titan-X interface from collapsing on component failure.
+ * Hardened for Next.js 16.2.6 Production environments.
  */
 class GlobalErrorBoundary extends Component<Props, State> {
   public state: State = {
@@ -61,10 +62,10 @@ class GlobalErrorBoundary extends Component<Props, State> {
                 <RefreshCw size={16} /> Reconnect
               </button>
               <button 
-                onClick={() => window.location.href = '/'}
+                onClick={() => window.location.href = '/dashboard'}
                 className="flex-1 h-14 bg-white/5 border border-white/10 text-white rounded-2xl font-black text-[10px] uppercase tracking-[4px] flex items-center justify-center gap-3 hover:bg-white/10 transition-all"
               >
-                <Home size={16} /> Escape to Home
+                <Home size={16} /> Dashboard
               </button>
             </div>
           </div>

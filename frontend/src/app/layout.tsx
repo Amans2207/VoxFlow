@@ -5,6 +5,16 @@ import Script from "next/script";
 import { SocketProvider } from "@/components/SocketProvider";
 import { JourneyTracker } from "@/components/JourneyTracker";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
+import { ThemeProvider } from "@/context/ThemeContext";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
+import { ToastProvider } from "@/components/Toast";
+import MaintenanceWrapper from "@/components/MaintenanceWrapper";
+import { AIProvider } from "@/context/AIContext";
+import AIProgressWrapper from "@/components/AIProgressWrapper";
+import { UploadProvider } from "@/context/UploadContext";
+import { AuthProvider } from "@/components/AuthProvider";
+import { CreditsProvider } from "@/context/CreditsContext";
+import QueryProvider from "@/providers/QueryProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -17,65 +27,25 @@ const sora = Sora({
   weight: ["400", "600", "700", "800"],
 });
 
+// STATIC METADATA: No variables allowed here for Turbopack optimization
 export const metadata: Metadata = {
   metadataBase: new URL('https://voxflow.ai'),
   title: {
     default: "VoxFlow AI | The Viral Video Production Studio",
     template: "%s | VoxFlow AI"
   },
-  description: "Create AI videos in seconds. The world's most powerful AI Video Production Studio for Creators and Agencies. Powered by the Titan-X Neural Engine.",
+  description: "Create AI videos in seconds. The world's most powerful AI Video Production Studio. Powered by the Titan-X Neural Engine.",
   applicationName: "VoxFlow AI",
   authors: [{ name: "Aman Studio" }],
-  generator: "Next.js",
-  keywords: ["AI Video Editor", "Neural Dubbing", "Hormozi Captions", "Titan-X Engine", "Automated Video Production", "Aman Studio", "VoxFlow"],
-  referrer: "origin-when-cross-origin",
-  openGraph: {
-    title: "VoxFlow AI | Next-Gen AI Video Production",
-    description: "Orchestrate viral content in 100+ languages with AI precision. The future of video creation is here.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "VoxFlow AI Studio" }],
-    url: 'https://voxflow.ai',
-    siteName: "VoxFlow AI",
-    locale: "en_US",
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: "VoxFlow AI | Next-Gen AI Video Studio",
-    description: "Create viral videos in seconds with the Titan-X Neural Engine.",
-    creator: "@voxflow_ai",
-    images: ["/twitter-image.png"],
-  },
-  manifest: "/manifest.json",
-  icons: {
-    icon: [
-      { url: "/favicon.ico" },
-      { url: "/icon.png", type: "image/png" },
-    ],
-    apple: "/apple-touch-icon.png",
-  },
 };
 
+// STATIC VIEWPORT: Separated from Metadata to stop Next.js warnings
 export const viewport = {
   themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
 };
-
-import { ThemeProvider } from "@/context/ThemeContext";
-import ThemeSwitcher from "@/components/ThemeSwitcher";
-import { ToastProvider } from "@/components/Toast";
-import MaintenanceWrapper from "@/components/MaintenanceWrapper";
-
-
-import { AIProvider } from "@/context/AIContext";
-import AIProgressWrapper from "@/components/AIProgressWrapper";
-
-import { UploadProvider } from "@/context/UploadContext";
-import { AuthProvider } from "@/components/AuthProvider";
-import { CreditsProvider } from "@/context/CreditsContext";
-
-import QueryProvider from "@/providers/QueryProvider";
 
 export default function RootLayout({
   children,
@@ -84,7 +54,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${sora.variable}`} suppressHydrationWarning>
-      <body className="" style={{ fontFamily: "var(--font-inter), sans-serif" }} suppressHydrationWarning>
+      <body style={{ fontFamily: "var(--font-inter), sans-serif" }} suppressHydrationWarning>
         <QueryProvider>
           <ToastProvider>
             <AuthProvider>
@@ -121,12 +91,6 @@ export default function RootLayout({
                   }
                 });
               }
-              // Clear old cache storage
-              if ('caches' in window) {
-                caches.keys().then(function(names) {
-                  for (let name of names) caches.delete(name);
-                });
-              }
             `,
           }}
         />
@@ -134,4 +98,3 @@ export default function RootLayout({
     </html>
   );
 }
-
