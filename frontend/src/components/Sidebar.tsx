@@ -41,7 +41,6 @@ export default function NeuralCommandCenterSidebar() {
     { name: 'MOBILE SYNC', icon: <Smartphone size={20} />, href: '/mobile/upload', chamber: 'mobile' },
     { name: 'ORCHESTRATOR', icon: <Zap size={20} />, href: '/orchestrator', chamber: 'scout' },
     { name: 'NEURAL VAULT', icon: <HardDrive size={20} />, href: '/vault', chamber: 'auth' },
-    { name: 'ADMIN CORE', icon: <ShieldCheck size={20} />, href: '/admin', chamber: 'admin' },
   ];
 
   useEffect(() => {
