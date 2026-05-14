@@ -1,77 +1,78 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Zap, Loader2, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Zap, Loader2, Sparkles, Activity } from 'lucide-react';
+import { socket } from '@/utils/socket'; // Assuming socket.ts exists
 
-interface ProgressBarProps {
-  taskId?: string;
-  onComplete?: (data: any) => void;
-  progress?: number;
-  label?: string;
-  color?: string;
-}
+export const NeuralProgressBar = () => {
+    const [task, setTask] = useState<{ job_id: string; progress: number; message: string; status: string } | null>(null);
 
-export default function NeuralProgressBar({ taskId, onComplete, progress: manualProgress, label: manualLabel, color }: ProgressBarProps) {
-  const [internalProgress, setInternalProgress] = useState(0);
-  const [internalStatus, setInternalStatus] = useState('Initializing...');
+    useEffect(() => {
+        const handleStatus = (data: any) => {
+            setTask(data);
+            if (data.status === 'Completed' || data.status === 'Failed') {
+                setTimeout(() => setTask(null), 5000);
+            }
+        };
 
-  const progress = manualProgress !== undefined ? manualProgress : internalProgress;
-  const status = manualLabel !== undefined ? manualLabel : internalStatus;
+        if (socket) {
+            socket.on('render_status', handleStatus);
+            return () => { socket.off('render_status', handleStatus); };
+        }
+    }, []);
 
-  useEffect(() => {
-    if (!taskId) return;
+    if (!task) return null;
 
-    // Connect to Server-Sent Events (SSE)
-    const AI_SERVICE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-    const eventSource = new EventSource(`${AI_SERVICE_URL}/api/autopilot/progress/${taskId}`);
+    return (
+        <AnimatePresence>
+            <motion.div 
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[9999] w-[90%] max-w-xl"
+            >
+                <div className="bg-[#0A0A0B]/80 backdrop-blur-3xl border border-white/10 rounded-[32px] p-8 shadow-2xl shadow-blue-500/10">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-500 animate-pulse">
+                                <Zap size={20} fill="currentColor" />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-blue-500 uppercase tracking-[4px]">Neural Link Active</span>
+                                <span className="text-xs font-bold text-white truncate max-w-[200px]">{task.message}</span>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <span className="text-xl font-black text-white italic">{task.progress}%</span>
+                            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Job: {task.job_id.slice(0, 8)}</span>
+                        </div>
+                    </div>
 
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setInternalProgress(data.progress);
-      
-      if (data.progress < 100) {
-        setInternalStatus(`Neural Processing: ${data.progress}%`);
-      } else {
-        setInternalStatus('Analysis Complete!');
-        eventSource.close();
-        if (onComplete) onComplete(data);
-      }
-    };
+                    <div className="relative h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                        <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${task.progress}%` }}
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-600 via-blue-400 to-cyan-400 shadow-[0_0_20px_rgba(59,130,246,0.5)]"
+                        />
+                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+                    </div>
 
-    eventSource.onerror = (err) => {
-      console.error("SSE Connection Failed:", err);
-      eventSource.close();
-    };
-
-    return () => {
-      eventSource.close();
-    };
-  }, [taskId]);
-
-  return (
-    <div className="w-full bg-zinc-900/50 border border-white/5 p-6 rounded-[2rem] backdrop-blur-xl">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          {progress < 100 ? <Loader2 className="animate-spin text-[#CCFF00]" size={16} /> : <CheckCircle2 className="text-[#39FF14]" size={16} />}
-          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{status}</span>
-        </div>
-        <span className="text-xs font-black text-white">{progress}%</span>
-      </div>
-
-      <div className="h-2 w-full bg-black rounded-full overflow-hidden border border-white/5">
-        <motion.div 
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          className="h-full bg-gradient-to-r from-[#CCFF00] to-[#39FF14] shadow-[0_0_20px_rgba(204,255,0,0.4)]"
-          style={color ? { background: color, boxShadow: `0 0 20px ${color}66` } : {}}
-        />
-      </div>
-      
-      <div className="mt-4 flex items-center gap-2 opacity-30">
-        <Zap size={12} />
-        <span className="text-[8px] font-black text-zinc-500 uppercase tracking-tighter">GPU Optimized Rendering Active</span>
-      </div>
-    </div>
-  );
-}
+                    <div className="mt-4 flex items-center justify-between">
+                        <div className="flex gap-2">
+                            {[1, 2, 3].map(i => (
+                                <motion.div 
+                                    key={i}
+                                    animate={{ opacity: [0.2, 1, 0.2] }}
+                                    transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+                                    className="w-1 h-1 bg-blue-500 rounded-full"
+                                />
+                            ))}
+                        </div>
+                        <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Titan-X Neural Engine v10.0</span>
+                    </div>
+                </div>
+            </motion.div>
+        </AnimatePresence>
+    );
+};

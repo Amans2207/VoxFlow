@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/Toast';
 import { soundEngine } from '@/utils/SoundEngine';
 import { useRouter } from "next/navigation";
+import ThemeHub from "@/components/ThemeHub";
 
 export default function SettingsPage() {
   const { showToast } = useToast();
@@ -208,6 +209,16 @@ export default function SettingsPage() {
               >
                 Refill Credits
               </button>
+           </div>
+
+           <div className="p-8 lg:p-10 bg-[#0A0A0B] rounded-[48px] border border-white/5 shadow-2xl">
+              <div className="flex justify-between items-center mb-10">
+                 <p className="text-[10px] font-black text-[#404040] uppercase tracking-widest">Visual Identity</p>
+                 <Palette className="text-[#a855f7]" size={20} />
+              </div>
+              <div className="flex flex-col gap-8">
+                 <ThemeHub />
+              </div>
            </div>
 
            <div className="p-8 lg:p-10 bg-[#0A0A0B] rounded-[48px] border border-white/5 shadow-2xl">

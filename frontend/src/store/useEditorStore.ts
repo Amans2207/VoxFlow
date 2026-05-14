@@ -149,6 +149,8 @@ export const useEditorStore = create<EditorState>()(
       setCreditBalance: (amount) => set({ creditBalance: amount }),
       setUploadedVideoUrl: (url) => set({ uploadedVideoUrl: url }),
       setActiveJobId: (id) => set({ activeJobId: id }),
+      setTargetLang: (lang) => set({ targetLang: lang }),
+      setSelectedVoice: (voice) => set({ selectedVoice: voice }),
       setUploadProgress: (fileName, progress) => set((state) => ({
         uploadingAssets: { ...state.uploadingAssets, [fileName]: progress }
       })),

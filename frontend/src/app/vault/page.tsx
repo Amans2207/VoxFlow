@@ -5,13 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   History, Clock, Download, ExternalLink, 
   Trash2, Search, Filter, Loader2, Video, 
-  Zap, AlertCircle 
+  Zap, AlertCircle, Scissors 
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/Toast';
 import { soundEngine } from '@/utils/SoundEngine';
 
 export default function HistoryPage() {
+  const router = useRouter();
   const { showToast } = useToast();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +34,7 @@ export default function HistoryPage() {
     }
 
     const { data, error } = await supabase
-      .from('tasks')
+      .from('jobs')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
@@ -123,14 +125,25 @@ export default function HistoryPage() {
 
                   <div className="flex items-center gap-4 w-full md:w-auto border-t md:border-none border-white/5 pt-6 md:pt-0">
                      {task.output_url && (
-                        <a 
-                          href={task.output_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex-1 md:flex-none h-14 px-8 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 text-[10px] font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all"
-                        >
-                           <Download size={14} /> Download
-                        </a>
+                        <>
+                           <button 
+                             onClick={() => {
+                               soundEngine?.play("click");
+                               router.push(`/editor?videoUrl=${encodeURIComponent(task.output_url)}`);
+                             }}
+                             className="flex-1 md:flex-none h-14 px-8 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex items-center justify-center gap-3 text-[10px] font-black text-blue-500 uppercase tracking-widest hover:bg-blue-600/20 transition-all"
+                           >
+                              <Scissors size={14} /> Edit
+                           </button>
+                           <a 
+                             href={task.output_url} 
+                             target="_blank" 
+                             rel="noopener noreferrer"
+                             className="flex-1 md:flex-none h-14 px-8 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 text-[10px] font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all"
+                           >
+                              <Download size={14} /> Download
+                           </a>
+                        </>
                      )}
                      <button className="h-14 w-14 bg-red-500/5 border border-red-500/10 rounded-2xl flex items-center justify-center text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-all">
                         <Trash2 size={18} />

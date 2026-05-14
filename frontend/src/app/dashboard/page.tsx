@@ -1,329 +1,205 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Zap, Sparkles, Wand2, Activity, Cpu, Play, 
-  Plus, Search, Clock, ArrowUpRight, BarChart3,
-  Monitor, Video, Share2, Layers, Brain, Layout,
-  X, Send, Mic, Film, CloudLightning, Loader2, ChevronRight, Globe, Calendar, User, Upload
-} from "lucide-react";
-import { executeNeuralTask } from "@/utils/NeuralShield";
-import { useEditorStore } from "@/store/useEditorStore";
-import { useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";
-import apiClient from "@/utils/apiClient";
-import { useUserStore } from "@/store/useUserStore";
-import CreditsModal from "@/components/CreditsModal";
-import { soundEngine } from "@/utils/SoundEngine";
+  Zap, Activity, Database, Play, Globe, 
+  Sparkles, Layers, RefreshCcw, ArrowUpRight,
+  TrendingUp, Gauge, Shield, Cpu, Smartphone,
+  Plus, Search, Clock, Video as YoutubeIcon, 
+  Terminal, ShieldCheck, AlertCircle, TerminalSquare, CheckCircle2
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
+import api from '@/lib/api';
+import { useUserStore } from '@/store/useUserStore';
+import { socket } from '@/utils/socket';
 
-export default function Dashboard() {
-  const router = useRouter();
-  const { 
-    creditBalance, renderCount, engineStatus, 
-    generateMagicProject
-  } = useEditorStore();
+interface LogEntry {
+  id: string;
+  msg: string;
+  type: 'info' | 'success' | 'error' | 'warning';
+  time: string;
+}
+
+export default function NeuralDashboard() {
   const { user } = useUserStore();
-  const [showMagicBox, setShowMagicBox] = useState(false);
-  const [magicPrompt, setMagicPrompt] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [aiCommand, setAiCommand] = useState("");
-  const [recentProjects, setRecentProjects] = useState<any[]>([]);
-  const [showCreditsModal, setShowCreditsModal] = useState(false);
-  const [selectedLang, setSelectedLang] = useState("Hindi");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isScraping, setIsScraping] = useState(false);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const addLog = (msg: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') => {
+    const newLog = {
+      id: Math.random().toString(36).substr(2, 9),
+      msg,
+      type,
+      time: new Date().toLocaleTimeString([], { hour12: false })
+    };
+    setLogs(prev => [...prev.slice(-19), newLog]);
+  };
 
   useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const res = await apiClient.get(`/api/user/projects?email=${user?.email || 'anonymous'}`);
-        setRecentProjects(res.data.slice(0, 3));
-      } catch (e) {
-        // Fallback for mock mode
-        setRecentProjects([
-          { id: '1', name: 'Neural_Cinematic_V1.mp4', date: '2h ago' },
-          { id: '2', name: 'Viral_Short_Orchestration.mp4', date: '5h ago' },
-          { id: '3', name: 'Brand_Identity_Master.mp4', date: '1d ago' },
-        ]);
-      }
-    };
-    fetchHistory();
-  }, [user]);
+    addLog("TITAN-X Core Initialized.", "success");
+    addLog("Neural Bridge Secure.", "info");
 
-  const handleMagicCreate = async () => {
-    if (!magicPrompt) return toast.error("Bhai, prompt toh likho!");
+    socket.on('render_status', (data) => {
+      addLog(data.message || `Render Status: ${data.progress}%`, data.status === 'Failed' ? 'error' : 'info');
+    });
+
+    return () => { socket.off('render_status'); };
+  }, []);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [logs]);
+
+  const handleQuickScrape = async () => {
+    toast.loading("Engaging Orchestrator...", { id: 'scrape' });
+    setIsScraping(true);
+    addLog("Orchestrator: Scouting Global Trends...", "info");
     
-    const task = async () => {
-      const res = await apiClient.post('/api/video/generate', { prompt: magicPrompt, email: user?.email });
-      generateMagicProject(magicPrompt); // Local store update
-      return res;
-    };
-
-    const success = await executeNeuralTask(
-      task,
-      "Neural Director: Orchestrating Scenes...",
-      "Empire Video Ready! Opening Studio... 🎬"
-    );
-
-    if (success) {
-      setShowMagicBox(false);
-      router.push('/dashboard/precision-studio');
+    try {
+      await api.post('/api/v1/orchestrate', { topic: 'viral' });
+      addLog("Scout: Fetching Playwright Context...", "info");
+      await new Promise(r => setTimeout(r, 2000));
+      addLog("Scout: Neural Hooks Synthesized.", "success");
+      toast.success("Scout Complete: 12 Hooks Found.", { id: 'scrape' });
+    } catch (e) {
+      addLog("Scout: Connection Refused by Brain.", "error");
+    } finally {
+      setIsScraping(false);
     }
   };
 
-  const handleAiCommand = async (e: React.KeyboardEvent | React.MouseEvent) => {
-    if ((e as React.KeyboardEvent).key === 'Enter' || e.type === 'click') {
-       if (!aiCommand) return;
-       
-       const task = async () => {
-          const res = await apiClient.post('/api/video/generate', { prompt: aiCommand, email: user?.email });
-          generateMagicProject(aiCommand);
-          return res;
-       };
-
-       const success = await executeNeuralTask(
-          task,
-          `Neural Hub: Executing "${aiCommand}"`,
-          "Project Built Successfully ⚡"
-       );
-
-       if (success) {
-          setAiCommand("");
-          router.push('/dashboard/precision-studio');
-       }
-    }
-  };
+  const dashboardCards = [
+    { name: 'Neural Factory', icon: <Cpu size={24} />, desc: 'Batch Render Engine', action: 'Active' },
+    { name: 'Viral Scout', icon: <TrendingUp size={24} />, desc: 'Playwright Scraper', action: 'Online' },
+    { name: 'Identity Brain', icon: <Layers size={24} />, desc: 'Voice Reconstruction', action: 'Online' },
+  ];
 
   return (
-    <div className="flex flex-col gap-12 p-2 min-h-screen pb-20">
+    <div className="flex flex-col min-h-screen bg-black p-8 lg:p-12 gap-12 font-sans selection:bg-blue-500/30 overflow-x-hidden">
       
-      {/* AI COMMAND BAR & FUEL STATUS */}
-      <div className="flex flex-col md:flex-row items-center gap-6">
-        <div className="flex-1 w-full bg-[#0A0A0B] border border-white/10 rounded-3xl p-4 flex items-center gap-4 shadow-3xl group focus-within:border-[#00e5ff33] transition-all">
-          <div className="w-10 h-10 bg-[#00e5ff22] rounded-full flex items-center justify-center text-[#00e5ff] shadow-[0_0_15px_rgba(0,229,255,0.2)]">
-            <Zap size={20} className="group-focus-within:animate-pulse" />
-          </div>
-          <input 
-            type="text" 
-            value={aiCommand}
-            onChange={(e) => setAiCommand(e.target.value)}
-            onKeyDown={handleAiCommand}
-            placeholder="Command the Titan-X Engine... (e.g. 'Build a 30s TikTok about Crypto trends')" 
-            className="flex-1 bg-transparent border-none text-white focus:outline-none placeholder:text-zinc-600 font-bold text-sm tracking-wide"
-          />
-          <div className="flex items-center gap-2 pr-4">
-             <span className="hidden md:block px-3 py-1 bg-white/5 rounded-lg text-[8px] font-black text-zinc-500 uppercase tracking-widest border border-white/5">Auto-Detect ON</span>
-             <button onClick={() => handleAiCommand({ key: 'Enter' } as any)} className="px-6 py-2 bg-[#00e5ff] text-black text-[10px] font-black uppercase rounded-xl hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,229,255,0.2)]">Run Command</button>
-          </div>
-        </div>
-
-        {/* FUEL STATUS BAR */}
-        <div 
-          onClick={() => {
-            setShowCreditsModal(true);
-            soundEngine?.play("click");
-          }}
-          className="shrink-0 bg-[#0A0A0B] border border-[#00e5ff33] px-6 py-4 rounded-3xl flex items-center gap-4 shadow-[0_0_20px_rgba(0,229,255,0.05)] hover:border-[#00e5ff] cursor-pointer transition-all group"
-        >
-           <div className="flex flex-col items-end">
-              <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[2px]">Engine Fuel</span>
-              <span className="text-xl font-black text-white">{creditBalance.toFixed(1)} <span className="text-[#00e5ff] text-[10px] tracking-widest">CR</span></span>
-           </div>
-           <div className="w-1.5 h-8 bg-[#00e5ff22] rounded-full overflow-hidden">
-              <div className="w-full bg-[#00e5ff] animate-pulse" style={{ height: `${Math.min(100, (creditBalance/1000)*100)}%` }}></div>
-           </div>
-           <div className="ml-2 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-zinc-500 group-hover:text-white transition-all">
-              <Plus size={16} />
-           </div>
-        </div>
-      </div>
-
-      <CreditsModal isOpen={showCreditsModal} onClose={() => setShowCreditsModal(false)} />
-      
-      {/* VIRAL SUITE CONTROLS */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* AVATAR UPLOAD */}
-          <div className="bg-[#0A0A0B] border border-white/5 p-6 rounded-[32px] flex flex-col gap-4 group hover:border-[#00e5ff33] transition-all">
-             <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Neural Avatar</span>
-                <User size={16} className="text-zinc-600 group-hover:text-[#00e5ff]" />
-             </div>
-             <div className="flex-1 border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center p-6 hover:bg-white/2 cursor-pointer transition-all relative overflow-hidden">
-                {avatarUrl ? (
-                  <img src={avatarUrl} className="absolute inset-0 w-full h-full object-cover opacity-50" />
-                ) : (
-                  <>
-                    <Upload size={24} className="text-zinc-700 mb-2" />
-                    <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[2px]">Drop AI Face</span>
-                  </>
-                )}
-                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
-                  if (e.target.files?.[0]) setAvatarUrl(URL.createObjectURL(e.target.files[0]));
-                }} />
-             </div>
-          </div>
-
-          {/* LANGUAGE SELECTOR */}
-          <div className="bg-[#0A0A0B] border border-white/5 p-6 rounded-[32px] flex flex-col gap-4 group hover:border-[#00e5ff33] transition-all">
-             <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Target Language</span>
-                <Globe size={16} className="text-zinc-600 group-hover:text-[#00e5ff]" />
-             </div>
-             <select 
-               value={selectedLang}
-               onChange={(e) => setSelectedLang(e.target.value)}
-               className="flex-1 bg-white/2 border border-white/5 rounded-2xl px-6 font-black text-sm text-white focus:outline-none appearance-none cursor-pointer hover:border-white/10"
-             >
-                {["Hindi", "English", "Spanish", "Marathi", "Bengali", "Japanese"].map(l => (
-                  <option key={l} value={l} className="bg-[#0A0A0B]">{l}</option>
-                ))}
-             </select>
-          </div>
-
-          {/* SOCIAL SCHEDULER */}
-          <div className="bg-[#0A0A0B] border border-white/5 p-6 rounded-[32px] flex flex-col gap-4 group hover:border-[#00e5ff33] transition-all">
-             <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Platform Sync</span>
-                <Calendar size={16} className="text-zinc-600 group-hover:text-[#00e5ff]" />
-             </div>
-             <div className="flex flex-col gap-2">
-                <button className="w-full py-4 bg-white/2 border border-white/5 rounded-2xl flex items-center justify-center gap-3 hover:bg-white/5 transition-all">
-                   <Share2 size={16} className="text-pink-500" />
-                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Schedule Reel</span>
-                </button>
-                <button className="w-full py-4 bg-white/2 border border-white/5 rounded-2xl flex items-center justify-center gap-3 hover:bg-white/5 transition-all">
-                   <Clock size={16} className="text-[#00e5ff]" />
-                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Auto-Post ON</span>
-                </button>
-             </div>
-          </div>
-      </div>
-      {showMagicBox && (
-        <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-3xl flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
-           <div className="w-full max-w-3xl bg-[#0A0A0B] border border-white/10 rounded-[48px] shadow-3xl overflow-hidden flex flex-col relative">
-              <button onClick={() => setShowMagicBox(false)} className="absolute top-10 right-10 text-zinc-500 hover:text-white transition-all"><X size={24} /></button>
-              
-              <div className="p-12 flex flex-col gap-10">
-                 <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-3">
-                       <Sparkles size={24} className="text-[#00e5ff]" />
-                       <span className="text-[10px] font-black text-[#00e5ff] uppercase tracking-[6px]">Neural Magic Box</span>
-                    </div>
-                    <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic">Generative AI Director</h2>
-                 </div>
-
-                 <textarea 
-                    value={magicPrompt}
-                    onChange={(e) => setMagicPrompt(e.target.value)}
-                    placeholder="Describe your vision: 'A cinematic 1-minute video about how AI will change the world, fast-paced edits, epic music'..." 
-                    className="w-full h-40 bg-black/50 border border-white/5 rounded-[32px] p-8 text-[14px] text-white focus:outline-none focus:border-[#00e5ff33] transition-all resize-none font-medium leading-relaxed placeholder:text-zinc-700"
-                 />
-
-                 <div className="grid grid-cols-2 gap-6">
-                    <button className="h-16 bg-white/2 border border-white/5 rounded-2xl flex items-center px-6 gap-4 group hover:bg-white/5 transition-all">
-                       <Mic size={18} className="text-zinc-500 group-hover:text-[#00e5ff]" />
-                       <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Use Voiceover</span>
-                    </button>
-                    <button className="h-16 bg-white/2 border border-white/5 rounded-2xl flex items-center px-6 gap-4 group hover:bg-white/5 transition-all">
-                       <Film size={18} className="text-zinc-500 group-hover:text-[#00e5ff]" />
-                       <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Neural Stock</span>
-                    </button>
-                 </div>
-
-                 <button 
-                    onClick={handleMagicCreate}
-                    disabled={isGenerating}
-                    className="h-20 bg-[#00e5ff] text-black text-[12px] font-black uppercase rounded-2xl flex items-center justify-center gap-4 shadow-[0_0_40px_rgba(0,229,255,0.2)] hover:shadow-[0_0_60px_rgba(0,229,255,0.5)] transition-all disabled:opacity-50"
-                  >
-                    {isGenerating ? <Loader2 size={24} className="animate-spin" /> : <Wand2 size={24} />}
-                    {isGenerating ? "Neural Synthesizing..." : "Initialize Magic Creation"}
-                 </button>
-              </div>
-           </div>
-        </div>
-      )}
-
-      {/* HEADER HUD */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-         <div className="md:col-span-8 flex flex-col gap-4">
-            <div className="flex items-center gap-4">
-               <div className="w-2 h-2 bg-[#00e5ff] rounded-full animate-pulse shadow-[0_0_10px_#00e5ff]"></div>
-               <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[6px]">System Status: {engineStatus}</span>
+      {/* 🚀 HUB HEADER */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+         <div className="space-y-4">
+            <div className="flex items-center gap-3">
+               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_10px_#3b82f6]"></div>
+               <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[6px]">System Pulse: Optimal</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase leading-[0.85]">
-               TITAN-X <br /> <span className="text-[#00e5ff] italic italic-glow">COMMAND.</span>
-            </h1>
+            <h1 className="text-6xl lg:text-9xl font-black text-white tracking-tighter uppercase leading-[0.85] italic">COMMAND <span className="text-blue-500">CENTER.</span></h1>
+            <p className="text-zinc-500 text-sm font-bold uppercase tracking-widest leading-relaxed max-w-xl">Unified Orchestrator for the VoxFlow V9.0 Ecosystem. Real-time telemetry across all Neural Chambers.</p>
          </div>
-         <div className="md:col-span-4 flex items-center justify-end">
+         
+         <div className="flex gap-4">
             <button 
-               onClick={() => setShowMagicBox(true)}
-               className="h-20 px-10 bg-[#a855f7]/5 border border-[#a855f7]/20 rounded-[32px] flex items-center gap-6 group hover:bg-[#a855f7] hover:text-black transition-all duration-500 shadow-2xl"
+              onClick={handleQuickScrape}
+              disabled={isScraping}
+              className="px-10 h-20 bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest rounded-[32px] hover:bg-blue-500 transition-all flex items-center gap-4 shadow-2xl disabled:opacity-50"
             >
-               <Sparkles size={24} className="text-[#a855f7] group-hover:text-black transition-all group-hover:scale-125" />
-               <div className="flex flex-col items-start text-left">
-                  <span className="text-[11px] font-black uppercase tracking-widest leading-none">Magic Box</span>
-                  <span className="text-[8px] font-bold uppercase tracking-[2px] opacity-40 group-hover:opacity-100">Create with AI</span>
-               </div>
+               {isScraping ? <RefreshCcw size={18} className="animate-spin" /> : <Zap size={18} fill="currentColor" />}
+               Quick Scout
             </button>
          </div>
       </div>
 
-      {/* TELEMETRY CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-         {[
-            { label: 'Neural Balance', value: `${creditBalance.toFixed(1)}m`, icon: Activity, color: '#00e5ff' },
-            { label: 'Active Renders', value: renderCount, icon: Cpu, color: '#a855f7' },
-            { label: 'Uptime', value: '99.9%', icon: Zap, color: '#10b981' },
-            { label: 'Neural Core', value: 'Titan-X', icon: Brain, color: '#ff2d55' },
-         ].map((card, i) => (
-            <div key={i} className="p-8 bg-[#0A0A0B] border border-white/10 rounded-[40px] flex flex-col gap-4 group hover:border-[#00e5ff33] transition-all shadow-xl">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+         
+         {/* MAIN STATS GRID */}
+         <div className="lg:col-span-8 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               {dashboardCards.map((card) => (
+                 <div key={card.name} className="p-8 bg-[#0A0A0B] border border-white/5 rounded-[48px] space-y-6 group hover:border-blue-500/20 transition-all">
+                    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-blue-500 group-hover:scale-110 transition-all duration-500">
+                       {card.icon}
+                    </div>
+                    <div className="space-y-1">
+                       <h3 className="text-[11px] font-black text-white uppercase tracking-widest">{card.name}</h3>
+                       <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest italic">{card.desc}</p>
+                    </div>
+                 </div>
+               ))}
+            </div>
+
+            {/* 📟 NEURAL LOGS (THE BLACK BOX) */}
+            <div className="bg-[#050505] border border-white/5 rounded-[56px] p-10 flex flex-col gap-6 relative overflow-hidden h-[450px]">
+               <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                  <div className="flex items-center gap-4">
+                     <TerminalSquare size={20} className="text-blue-500" />
+                     <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[4px]">Neural Logs (Black Box)</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                     <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">Real-Time Stream</span>
+                  </div>
+               </div>
+
+               <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 font-mono pr-4 custom-scrollbar">
+                  <AnimatePresence initial={false}>
+                    {logs.map((log) => (
+                      <motion.div 
+                        key={log.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex gap-4 text-[10px] leading-relaxed group"
+                      >
+                         <span className="text-zinc-800 font-black">[{log.time}]</span>
+                         <span className={`font-bold uppercase tracking-widest ${
+                           log.type === 'success' ? 'text-green-500' :
+                           log.type === 'error' ? 'text-red-500' :
+                           log.type === 'warning' ? 'text-orange-500' : 'text-zinc-500'
+                         }`}>
+                           {log.type === 'success' ? '✔' : log.type === 'error' ? '✖' : '●'} {log.msg}
+                         </span>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+               </div>
+            </div>
+         </div>
+
+         {/* RIGHT: SYSTEM HEALTH & MOBILE SYNC */}
+         <div className="lg:col-span-4 space-y-8">
+            <div className="bg-[#0A0A0B] border border-white/5 rounded-[56px] p-10 space-y-10">
                <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 bg-white/2 rounded-2xl flex items-center justify-center text-zinc-500 group-hover:text-white transition-all" style={{ color: card.color }}>
-                     <card.icon size={20} />
+                  <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[4px]">Neural Mobile Bridge</h3>
+                  <div className="px-3 py-1 bg-blue-500/10 rounded-full">
+                     <span className="text-[8px] font-black text-blue-500 uppercase">V9.0 Master</span>
                   </div>
-                  <ArrowUpRight size={20} className="text-zinc-800 group-hover:text-white transition-all" />
                </div>
-               <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1">{card.label}</span>
-                  <span className="text-3xl font-black text-white tracking-tighter">{card.value}</span>
+               
+               <div className="aspect-square w-full bg-white rounded-[40px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] group relative">
+                  <div className="w-full h-full border-[10px] border-black rounded-2xl flex items-center justify-center">
+                     <div className="grid grid-cols-4 gap-2 opacity-80 group-hover:opacity-100 transition-all">
+                        {Array.from({ length: 16 }).map((_, i) => (
+                          <div key={i} className={`w-4 h-4 bg-black ${Math.random() > 0.5 ? 'opacity-100' : 'opacity-20'}`} />
+                        ))}
+                     </div>
+                  </div>
                </div>
             </div>
-         ))}
-      </div>
 
-      {/* RECENT ORCHESTRATIONS */}
-      <div className="flex flex-col gap-8 mt-10">
-         <div className="flex justify-between items-end px-4">
-            <div className="flex flex-col gap-2">
-               <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Recent Orchestrations</h3>
-               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest italic">Neural Master Timeline Records</p>
-            </div>
-            <button className="text-[10px] font-black text-[#00e5ff] uppercase tracking-widest border-b border-[#00e5ff33]">View All Records</button>
-         </div>
-
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {recentProjects.map((proj, i) => (
-               <div key={proj.id} className="aspect-video bg-[#0A0A0B] border border-white/10 rounded-[48px] overflow-hidden group relative cursor-pointer shadow-2xl hover:border-[#00e5ff33] transition-all">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60"></div>
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100">
-                     <div className="w-16 h-16 bg-[#00e5ff] rounded-full flex items-center justify-center text-black shadow-[0_0_30px_#00e5ff66]">
-                        <Play size={24} fill="currentColor" />
-                     </div>
-                  </div>
-                  <div className="absolute bottom-8 left-8 right-8 flex flex-col gap-2">
-                     <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-1.5 bg-[#00e5ff] rounded-full animate-pulse"></div>
-                        <span className="text-[9px] font-black text-white uppercase tracking-widest">Rendered {proj.date}</span>
-                     </div>
-                     <div className="flex justify-between items-center">
-                        <span className="text-lg font-black text-white uppercase tracking-tighter truncate w-40">{proj.name}</span>
-                        <ChevronRight size={18} className="text-zinc-600 group-hover:text-[#00e5ff] transition-all" />
-                     </div>
-                  </div>
+            {/* PRE-FLIGHT CHECKLIST */}
+            <div className="bg-[#0A0A0B] border border-white/5 rounded-[48px] p-10 space-y-8">
+               <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[4px]">Pre-Flight Checklist</h3>
+               <div className="space-y-4">
+                  {[
+                    { label: 'FFmpeg Engine', status: 'Ready' },
+                    { label: 'Neural VRAM', status: '85% Free' },
+                    { label: 'OpenAI Bridge', status: 'Stable' }
+                  ].map(check => (
+                    <div key={check.label} className="flex items-center justify-between py-2 border-b border-white/2">
+                       <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{check.label}</span>
+                       <div className="flex items-center gap-2">
+                          <CheckCircle2 size={12} className="text-green-500" />
+                          <span className="text-[8px] font-black text-white uppercase">{check.status}</span>
+                       </div>
+                    </div>
+                  ))}
                </div>
-            ))}
+            </div>
          </div>
+
       </div>
     </div>
   );
 }
-

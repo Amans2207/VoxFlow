@@ -1,28 +1,35 @@
-from fastapi import APIRouter, Request, HTTPException
-from utils.security import token_required
-import gc
+from fastapi import APIRouter, Request, BackgroundTasks
+from video_editor import video_editor
+from auth_handler import require_credits
+from core_engine import sio, logger
 
-studio_bp = APIRouter(prefix="/api/studio")
+router = APIRouter(prefix="/api/studio", tags=["Studio"])
 
-@studio_bp.post('/save-timeline')
-@token_required
-async def save_timeline(request: Request):
-    print('Bhai, request mil gayi backend par! Route: /api/studio/save-timeline')
-    """Handles heavy timeline state persistence."""
-    try:
-        data = await request.json()
-        # Process and save to DB
-        # ... logic ...
-        return {"status": "success", "message": "Timeline State Synchronized"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        gc.collect()
+@router.post("/captions")
+@require_credits(amount=2.0)
+async def add_captions(request: Request, background_tasks: BackgroundTasks):
+    """Studio Section: Adds viral captions to an existing video."""
+    data = await request.json()
+    video_path = data.get("video_url")
+    style = data.get("style", "Starboy")
+    job_id = data.get("job_id", "studio_caps")
 
-@studio_bp.get('/assets')
-@token_required
-async def get_studio_assets():
-    print('Bhai, request mil gayi backend par! Route: /api/studio/assets')
-    """Fetches user assets for the timeline."""
-    # Logic to fetch from DB
-    return {"assets": []}
+    async def process_task():
+        await sio.emit('render_status', {"job_id": job_id, "status": "Processing", "progress": 30, "message": "Burning Viral Captions..."})
+        output = video_editor.apply_viral_captions(video_path, style=style)
+        await sio.emit('render_status', {"job_id": job_id, "status": "Completed", "progress": 100, "url": output, "message": "Captions Synced! 🎬"})
+
+    background_tasks.add_task(process_task)
+    return {"status": "success", "message": "Caption task dispatched"}
+
+@router.post("/ingest")
+async def ingest_video(request: Request, background_tasks: BackgroundTasks):
+    """Universal Ingest Switchboard."""
+    data = await request.json()
+    url = data.get("url")
+    job_id = f"ingest_{os.urandom(4).hex()}"
+    
+    background_tasks.add_task(video_editor.normalize_video, url, job_id)
+    return {"status": "success", "job_id": job_id, "message": "Normalization Started"}
+
+import os

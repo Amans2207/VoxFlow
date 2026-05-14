@@ -7,6 +7,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/Toast";
 import { CreditsProvider } from "@/context/CreditsContext";
+import Sidebar from "@/components/Sidebar";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const sora = Sora({ variable: "--font-sora", subsets: ["latin"], weight: ["400", "700"] });
@@ -38,7 +39,12 @@ export default function RootLayout({
               <ThemeProvider>
                 <CreditsProvider>
                   <GlobalErrorBoundary>
-                    {children}
+                    <div className="flex min-h-screen">
+                      <Sidebar />
+                      <main className="flex-1">
+                        {children}
+                      </main>
+                    </div>
                   </GlobalErrorBoundary>
                 </CreditsProvider>
               </ThemeProvider>

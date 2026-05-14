@@ -1,56 +1,47 @@
-/**
- * NEURAL BRIDGE API (v16.2)
- * Centralized fetch utility for VoxFlow AI Production Core.
- * Communicates with Flask backend (localhost:5001) via Next.js Proxy.
- */
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
-const API_BASE = "/api";
+const axiosInstance = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001',
+  timeout: 30000,
+});
 
-export async function neuralFetch(endpoint: string, options: RequestInit = {}) {
-    // 1. Construct URL (Relative path to hit Next.js Proxy)
-    const url = endpoint.startsWith('http') 
-        ? endpoint 
-        : `${API_BASE}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
-    
-    // 2. Default Headers
-    const headers = new Headers(options.headers);
-    if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
-        headers.set('Content-Type', 'application/json');
-    }
-
-    // 3. Execution
-    const response = await fetch(url, {
-        ...options,
-        headers,
-    });
-
-    // 4. Robust Response Handling
-    if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = `Neural Error: ${response.status}`;
-        try {
-            const errorJson = JSON.parse(errorText);
-            errorMessage = errorJson.message || errorJson.error || errorMessage;
-        } catch (e) {
-            errorMessage = errorText || errorMessage;
+// 🛡️ VOXFLOW ZERO-FAILURE INTERCEPTOR
+axiosInstance.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    // If backend is down or returns error
+    if (!error.response) {
+      toast.error("Neural Engine Maintenance: Reconnecting to Titan-X Core...", {
+        icon: '🛰️',
+        style: {
+          borderRadius: '20px',
+          background: '#0A0A0B',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.1)',
+          fontSize: '10px',
+          fontWeight: '900',
+          textTransform: 'uppercase',
+          letterSpacing: '2px'
         }
-        throw new Error(errorMessage);
+      });
+    } else if (error.response.status === 402) {
+      toast.error("Neural Fuel Low: Recharge Credits.");
+    } else if (error.response.status === 401) {
+      toast.error("Session Expired: Re-syncing Identity.");
+    } else {
+      toast.error(`System Glitch: ${error.response.data?.error || 'Neural Bridge unstable.'}`);
     }
-
-    return await response.json();
-}
+    return Promise.reject(error);
+  }
+);
 
 export const api = {
-    get: (endpoint: string) => neuralFetch(endpoint, { method: 'GET' }),
-    post: (endpoint: string, body: any) => neuralFetch(endpoint, { 
-        method: 'POST', 
-        body: body instanceof FormData ? body : JSON.stringify(body) 
-    }),
-    put: (endpoint: string, body: any) => neuralFetch(endpoint, { 
-        method: 'PUT', 
-        body: body instanceof FormData ? body : JSON.stringify(body) 
-    }),
-    delete: (endpoint: string) => neuralFetch(endpoint, { method: 'DELETE' }),
+  get: (url: string) => axiosInstance.get(url),
+  post: (url: string, data?: any) => axiosInstance.post(url, data),
+  upload: (url: string, formData: FormData) => axiosInstance.post(url, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
 };
 
 export default api;

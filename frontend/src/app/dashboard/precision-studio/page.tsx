@@ -56,10 +56,13 @@ export default function PrecisionStudio() {
     audioTracks
   } = useEditorStore();
   
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<'Layers' | 'Bin' | 'Color' | 'Nodes'>('Layers');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showFaceSwap, setShowFaceSwap] = useState(false);
   const [showExportHub, setShowExportHub] = useState(false);
+  const [magicPrompt, setMagicPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleToolSwitch = (tool: 'V' | 'C' | 'B' | 'T' | 'P') => {
     soundEngine.play('click');
@@ -72,7 +75,8 @@ export default function PrecisionStudio() {
     if (selectedTool === 'C') {
       soundEngine.play('cut');
       try {
-        await apiClient.post('/api/video/split', { clip_id: clipId, time: 0 }); // Split at start for demo
+        const email = session?.user?.email || useUserStore.getState().user?.email || "anonymous";
+        await apiClient.post('/api/video/split', { clip_id: clipId, time: 0, email }); 
         toast.success("Razor Cut: Neural Split Executed", { icon: '✂️' });
       } catch (e) {
         toast.error("Razor Alignment Failed");
@@ -89,7 +93,8 @@ export default function PrecisionStudio() {
       return;
     }
     const task = async () => {
-      return await apiClient.post('/api/audio/caption', { video_url: selectedClip.url });
+      const email = session?.user?.email || useUserStore.getState().user?.email || "anonymous";
+      return await apiClient.post('/api/audio/caption', { video_url: selectedClip.url, email });
     };
 
     await executeNeuralTask(
@@ -105,7 +110,8 @@ export default function PrecisionStudio() {
       return;
     }
     const task = async () => {
-       return await apiClient.post('/api/audio/enhance', { video_url: selectedClip.url });
+       const email = session?.user?.email || useUserStore.getState().user?.email || "anonymous";
+       return await apiClient.post('/api/audio/enhance', { video_url: selectedClip.url, email });
     };
     await executeNeuralTask(
        task,
@@ -120,11 +126,11 @@ export default function PrecisionStudio() {
       return;
     }
     const task = async () => {
-       const userStore = (await import("@/store/useUserStore")).useUserStore.getState();
+       const email = session?.user?.email || useUserStore.getState().user?.email || "anonymous";
        return await apiClient.post('/api/dub', { 
          video_url: selectedClip.url, 
          target_lang: 'Hindi',
-         user_email: userStore.user?.email || "anonymous"
+         user_email: email
        });
     };
     await executeNeuralTask(
@@ -137,6 +143,24 @@ export default function PrecisionStudio() {
   const handleApplyTransition = () => {
      soundEngine.play('snap');
      toast.success("AI: 'Zoom-In' Transition Applied!");
+  };
+
+  const handleMagicCreate = async () => {
+    if (!magicPrompt) return toast.error("Bhai, prompt toh likho!");
+    const task = async () => {
+      const userStore = (await import("@/store/useUserStore")).useUserStore.getState();
+      return await apiClient.post('/api/video/generate', { prompt: magicPrompt, email: userStore.user?.email });
+    };
+
+    const success = await executeNeuralTask(
+      task,
+      "Neural Director: Orchestrating Scenes...",
+      "Neural Magic Applied Successfully ⚡"
+    );
+
+    if (success) {
+      setMagicPrompt("");
+    }
   };
 
   const selectedClip = videoTracks.flatMap(t => t.clips).find(c => c.id === selectedClipId);
@@ -188,6 +212,36 @@ export default function PrecisionStudio() {
                      <div className="px-4 py-2 bg-black/60 border border-white/10 rounded-full text-[8px] font-black uppercase tracking-widest text-white backdrop-blur-md">REC 4K PRORES 422</div>
                   </div>
                   <Play size={80} className="text-white/5 group-hover/play:text-[#00e5ff] transition-all cursor-pointer group-hover/play:scale-110" />
+               </div>
+            )}
+
+            {selectedTool === 'P' && (
+               <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-8 animate-in fade-in zoom-in-95 duration-500">
+                  <div className="w-full max-w-xl flex flex-col gap-8 bg-[#0A0A0B] border border-white/10 p-10 rounded-[48px] shadow-3xl">
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                           <Sparkles size={24} className="text-[#00e5ff]" />
+                           <span className="text-[10px] font-black text-[#00e5ff] uppercase tracking-[6px]">Neural Magic Box</span>
+                        </div>
+                        <button onClick={() => setSelectedTool('V')} className="text-zinc-500 hover:text-white"><X size={20} /></button>
+                     </div>
+                     
+                     <textarea 
+                        value={magicPrompt}
+                        onChange={(e) => setMagicPrompt(e.target.value)}
+                        placeholder="Command the Titan-X Engine: 'Add cinematic lightning', 'Swap background to Mars', 'Enhance facial details'..." 
+                        className="w-full h-32 bg-white/2 border border-white/5 rounded-3xl p-6 text-sm text-white focus:outline-none focus:border-[#00e5ff33] transition-all resize-none font-medium placeholder:text-zinc-700"
+                     />
+
+                     <button 
+                        onClick={handleMagicCreate}
+                        disabled={isGenerating}
+                        className="h-16 bg-[#00e5ff] text-black text-[10px] font-black uppercase rounded-2xl flex items-center justify-center gap-4 shadow-[0_0_30px_rgba(0,229,255,0.2)] hover:scale-[1.02] transition-all disabled:opacity-50"
+                     >
+                        {isGenerating ? <Loader2 size={20} className="animate-spin" /> : <Wand2 size={20} />}
+                        Initialize Neural Effect
+                     </button>
+                  </div>
                </div>
             )}
          </div>
@@ -352,7 +406,10 @@ export default function PrecisionStudio() {
                      <div 
                         key={fx.name} 
                         onClick={async () => {
-                           const task = async () => await apiClient.post(fx.endpoint, { video_url: 'mock' });
+                           const task = async () => {
+                              const email = session?.user?.email || useUserStore.getState().user?.email || "anonymous";
+                              return await apiClient.post(fx.endpoint, { video_url: 'mock', email });
+                           };
                            await executeNeuralTask(task, `Orchestrating ${fx.name}...`, `${fx.name} Active!`);
                         }}
                         className="p-6 bg-white/2 border border-white/5 rounded-3xl flex items-center justify-between group hover:border-[#00e5ff33] transition-all cursor-pointer"
@@ -390,10 +447,11 @@ export default function PrecisionStudio() {
                         onClick={() => {
                            if (selectedClip) {
                               const task = async () => {
+                                 const email = session?.user?.email || useUserStore.getState().user?.email || "anonymous";
                                  await apiClient.post('/api/media/extract', { 
                                     clip_id: selectedClip.id, 
                                     video_url: selectedClip.url, 
-                                    email: useUserStore.getState().user?.email 
+                                    email: email 
                                  });
                                  useEditorStore.getState().extractAudioFromClip(selectedClip.id);
                               };
@@ -446,14 +504,16 @@ export default function PrecisionStudio() {
                       <div 
                          key={format.name} 
                          onClick={async () => {
-                            const task = async () => {
-                               const userStore = (await import("@/store/useUserStore")).useUserStore.getState();
-                               return await apiClient.post('/api/admin/credits', { 
-                                  email: userStore.user?.email, 
-                                  amount: 15.0, 
-                                  action: 'deduct' 
-                               });
-                            };
+                             const task = async () => {
+                                const email = session?.user?.email || useUserStore.getState().user?.email || "anonymous";
+                                
+                                return await apiClient.post('/api/admin/credits', { 
+                                   email: email, 
+                                   amount: 15.0, 
+                                   action: 'deduct',
+                                   reason: 'Master Render Export'
+                                });
+                             };
                             const success = await executeNeuralTask(task, "Authorizing Master Export...", "Credits Synchronized! Rendering Started.");
                             if (success) {
                                setShowExportHub(false);

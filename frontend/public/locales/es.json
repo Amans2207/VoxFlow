@@ -1,0 +1,22 @@
+{
+  "common": {
+    "dashboard": "TABLERO",
+    "ai_studio": "ESTUDIO AI",
+    "orchestrator": "ORQUESTADOR",
+    "editor": "EDITOR NEURAL",
+    "vault": "BÓVEDA NEURAL",
+    "credits": "COMBUSTIBLE NEURAL",
+    "system_active": "SISTEMA ACTIVO",
+    "render": "EXPORTAR RENDER",
+    "upload": "INGRESAR ACTIVO",
+    "processing": "PROCESANDO..."
+  },
+  "editor": {
+    "timeline": "LÍNEA DE TIEMPO",
+    "properties": "PROPIEDADES",
+    "assets": "BIBLIOTECA",
+    "cutout": "RECORTE INTELIGENTE",
+    "tracking": "RASTREO DE MOVIMIENTO",
+    "speed": "RAMPA DE VELOCIDAD"
+  }
+}

@@ -160,10 +160,10 @@ async def update_user_credits(req: CreditUpdate):
 
         return {"status": "success", "new_balance": new_balance, "txn_id": txn_id}
         
+    except HTTPException as e:
+        raise e
     except Exception as e:
         print(f"[CRITICAL] Atomic Credit Failure: {e}")
-        # In a real transaction block, this would auto-rollback. 
-        # With Supabase REST, we'd need to manually undo if partial success occurred.
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- ASSET MANAGEMENT ---

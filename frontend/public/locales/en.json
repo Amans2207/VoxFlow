@@ -1,0 +1,22 @@
+{
+  "common": {
+    "dashboard": "DASHBOARD",
+    "ai_studio": "AI STUDIO",
+    "orchestrator": "ORCHESTRATOR",
+    "editor": "NEURAL EDITOR",
+    "vault": "NEURAL VAULT",
+    "credits": "NEURAL FUEL",
+    "system_active": "SYSTEM ACTIVE",
+    "render": "EXPORT RENDER",
+    "upload": "INGEST ASSET",
+    "processing": "NEURALIZING..."
+  },
+  "editor": {
+    "timeline": "TIMELINE",
+    "properties": "PROPERTIES",
+    "assets": "ASSET LIBRARY",
+    "cutout": "AI SMART CUTOUT",
+    "tracking": "MOTION TRACK",
+    "speed": "SPEED RAMPING"
+  }
+}
